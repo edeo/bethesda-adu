@@ -1,0 +1,80 @@
+[
+  {
+    "file": "data/raw/pilot/parcels.geojson",
+    "url": "https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/property/MapServer/0",
+    "where": "1=1",
+    "bbox": [
+      -77.11,
+      38.96,
+      -77.098,
+      38.968
+    ],
+    "count": 649,
+    "downloaded_at": "2026-11-09T03:49:03.591531+00:00"
+  },
+  {
+    "file": "data/raw/pilot/zoning.geojson",
+    "url": "https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/zoning/FeatureServer/1",
+    "where": "1=1",
+    "bbox": [
+      -77.11,
+      38.96,
+      -77.098,
+      38.968
+    ],
+    "count": 60,
+    "downloaded_at": "2026-11-09T03:49:04.173788+00:00"
+  },
+  {
+    "file": "data/raw/pilot/footprints.geojson",
+    "url": "https://gis.montgomerycountymd.gov/arcgis/rest/services/General/BLDG_PS/MapServer/0",
+    "where": "1=1",
+    "bbox": [
+      -77.11,
+      38.96,
+      -77.098,
+      38.968
+    ],
+    "count": 667,
+    "downloaded_at": "2026-11-09T03:49:04.450792+00:00"
+  },
+  {
+    "file": "data/raw/pilot/sdat.geojson",
+    "url": "https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0",
+    "where": "JURSCODE = 'MONT'",
+    "bbox": [
+      -77.11,
+      38.96,
+      -77.098,
+      38.968
+    ],
+    "count": 1276,
+    "downloaded_at": "2026-11-09T03:49:04.980948+00:00"
+  },
+  {
+    "file": "data/raw/pilot/zcta.geojson",
+    "url": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1",
+    "where": "ZCTA5 IN ('20814','20816','20817')",
+    "bbox": [
+      -77.11,
+      38.96,
+      -77.098,
+      38.968
+    ],
+    "count": 1,
+    "downloaded_at": "2026-11-09T03:49:05.116765+00:00"
+  },
+  {
+    "file": "data/raw/pilot/places.geojson",
+    "url": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/4",
+    "where": "STATE = '24'",
+    "bbox": [
+      -77.11,
+      38.96,
+      -77.098,
+      38.968
+    ],
+    "count": 1,
+    "downloaded_at": "2026-11-09T03:49:05.155540+00:00"
+  }
+]
