@@ -65,6 +65,8 @@ def main(argv: list[str] | None = None) -> None:
     run.add_argument("--force-fetch", action="store_true", help="re-download raw data")
     viewer = sub.add_parser("viewer", help="build the aerial verification viewer")
     viewer.add_argument("--area", choices=("pilot", "full"), default="pilot")
+    verify = sub.add_parser("verify", help="score a viewer verification export")
+    verify.add_argument("csv_path", type=Path)
     args = parser.parse_args(argv)
     if args.command == "run":
         _run(args, parser)
@@ -75,6 +77,19 @@ def main(argv: list[str] | None = None) -> None:
         print(f"wrote {out}/index.html and {out}/sample.geojson")
         print("serve with: python -m http.server 8000")
         print("then open:  http://localhost:8000/viewer/")
+    elif args.command == "verify":
+        from adu.verify import score_verification
+
+        try:
+            score = score_verification(args.csv_path)
+        except (ValueError, OSError) as exc:
+            parser.error(str(exc))
+        print(f"n              {score['n']}")
+        print(f"correct        {score['correct']}")
+        print(f"pct_correct    {score['pct_correct']:.1f}")
+        print(f"wrong_by_reason {score['wrong_by_reason']}")
+        print(f"passes         {score['passes']}")
+        sys.exit(0 if score["passes"] else 1)
 
 
 if __name__ == "__main__":
