@@ -110,3 +110,12 @@ def test_town_assigned_by_centroid(raw, tmp_path, run_cfg):
     towns = parcels.set_index("parcel_id")["town"]
     assert towns["1"] == "Somerset town"
     assert pd.isna(towns["2"])
+
+
+def test_pilot_drops_parcels_outside_zcta_union(raw, tmp_path, run_cfg):
+    raw.zcta = [rect(-500, -500, 1000, 1000)]  # covers x -500..500
+    raw.parcel(rect(0, 0, 100, 60), 1, ACCT)
+    raw.parcel(rect(1500, 0, 100, 60), 2, "00000002")  # inside the bbox, outside every ZCTA
+    raw.zone(rect(-50, -50, 2000, 200), "R-60")
+    parcels, _ = run(raw, tmp_path, run_cfg)
+    assert parcels["parcel_id"].tolist() == ["1"]

@@ -63,9 +63,12 @@ def _first_match(points: gpd.GeoDataFrame, layer: gpd.GeoDataFrame, column: str)
 
 
 def _study_area(raw_dir: Path, area: str, run_cfg: dict):
+    """Study ZCTA union; for the pilot, only the part of it inside the pilot bbox."""
+    zctas = gpd.read_file(raw_dir / "zcta.geojson").to_crs(WORKING_CRS).geometry.union_all()
     if area == "pilot":
-        return gpd.GeoSeries([box(*run_cfg["pilot_bbox_lonlat"])], crs="EPSG:4326").to_crs(WORKING_CRS).iloc[0]
-    return gpd.read_file(raw_dir / "zcta.geojson").to_crs(WORKING_CRS).geometry.union_all()
+        bbox = gpd.GeoSeries([box(*run_cfg["pilot_bbox_lonlat"])], crs="EPSG:4326").to_crs(WORKING_CRS).iloc[0]
+        return bbox.intersection(zctas)
+    return zctas
 
 
 def prepare(raw_dir: Path, out_dir: Path, area: str, sources: dict | None = None,
