@@ -1,0 +1,11 @@
+min_dim_ft: 20
+min_area_sqft: 400
+separation_ft: 5
+shed_ignore_sqft: 0
+story_height_ft: 10
+misalign_threshold: 0.10
+flag_pole_max_width_ft: 25
+rotations_deg: [0, 15, -15, 30, -30, 45, -45]
+sample_size: 40
+zctas: ["20814", "20816", "20817"]
+pilot_bbox_lonlat: [-77.106, 38.962, -77.094, 38.970]

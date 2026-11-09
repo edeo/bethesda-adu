@@ -1,0 +1,17 @@
+# Skeleton. Real values and citations arrive in Task 2.
+zones:
+  R-60:
+    adu_eligible: true
+    setbacks_ft: {front: 25, side: 8, side_street: 25, rear: 20}
+    height_ft: 35
+    coverage_cap: 0.35
+    behind_front_line: true
+    citation: "PLACEHOLDER"
+adu_size_cap_ratio: 0.75
+adu_size_cap_citation: "PLACEHOLDER"
+sfd_codes:
+  land_use: []
+  structure: []
+  citation: "PLACEHOLDER"
+corner_lot_front: "shorter"
+corner_lot_citation: "PLACEHOLDER"
