@@ -129,3 +129,22 @@ def test_row_polygons_kept_and_flagged(raw, tmp_path, run_cfg):
     assert parcels["is_row"].dtype == bool
     assert bool(by_id.loc["2", "is_row"]) is True
     assert bool(by_id.loc["1", "is_row"]) is False
+
+
+def test_neighbors_file_holds_unclipped_parcels(raw, tmp_path, run_cfg):
+    raw.zcta = [rect(-500, -500, 1000, 1000)]  # covers x -500..500
+    raw.parcel(rect(0, 0, 100, 60), 1, ACCT)
+    raw.parcel(rect(1500, 0, 100, 60), 2, "00000002")  # outside the study area
+    raw.parcel(rect(0, -50, 100, 50), 3, "ROW", None)
+    raw.parcel(bowtie(), 4, "00000004")  # invalid ring, repaired
+    raw.zone(rect(-50, -50, 2000, 200), "R-60")
+    d = raw.write()
+    p, _ = prepare(d, tmp_path / "out", "pilot", run_cfg=run_cfg)
+    nb = gpd.read_parquet(p.parent / "parcels_neighbors.parquet")
+    assert "2" not in set(gpd.read_parquet(p)["parcel_id"])
+    assert list(nb.columns) == ["parcel_id", "is_row", "geometry"]
+    assert nb.crs.to_epsg() == 2248
+    assert {"1", "2", "3", "4"} <= set(nb["parcel_id"])
+    assert nb.set_index("parcel_id").loc["3", "is_row"] == True  # noqa: E712
+    assert nb.geometry.is_valid.all()
+    assert set(nb.geom_type) <= {"Polygon", "MultiPolygon"}

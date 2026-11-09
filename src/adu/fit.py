@@ -18,6 +18,7 @@ from adu.config import load_run_config, load_zones
 from adu.fit_edges import classify_edges
 from adu.fit_pocket import build_pocket, remaining_coverage, setback_envelope
 from adu.fit_rect import largest_rectangle, lot_axis_deg, max_adu_floor_area
+from adu.prepare import NEIGHBORS_FILE
 
 FIT_STATUSES = {"flagged_town", "uncertain"}  # plus None
 NEIGHBOR_DIST_FT = 5.0
@@ -69,11 +70,20 @@ def _fit_one(geom, house, accessories, fp_areas, lot_area, living, zone_rule, zo
 
 
 def run_fit(classified: gpd.GeoDataFrame, footprints: gpd.GeoDataFrame, zones: dict,
-            run: dict) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+            run: dict, neighbors: gpd.GeoDataFrame | None = None) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Fit every candidate parcel.
+
+    `neighbors` (parcel_id, is_row, geometry) is the parcel layer used to find adjacent lots
+    when classifying edges; pass the unclipped layer so lots at the study-area edge keep
+    their neighbors. Defaults to `classified` itself. ROW polygons and the parcel itself
+    (by parcel_id) are never neighbors.
+    """
     out = classified.copy().reset_index(drop=True)
     crs = out.crs
-    is_row = out["is_row"].fillna(False).astype(bool) if "is_row" in out else pd.Series(False, index=out.index)
-    nb_layer = out.loc[~is_row, ["parcel_id", "geometry"]]
+    src = out if neighbors is None else neighbors.to_crs(crs)
+    is_row = src["is_row"].fillna(False).astype(bool) if "is_row" in src else pd.Series(False, index=src.index)
+    nb_layer = src.loc[~is_row, ["parcel_id", "geometry"]].reset_index(drop=True)
+    nb_layer["parcel_id"] = nb_layer["parcel_id"].astype(str)
     nb_index = nb_layer.sindex
     fp_by_parcel = {pid: g for pid, g in footprints.groupby("parcel_id")}
     zone_cfg = zones["zones"]
@@ -101,7 +111,7 @@ def run_fit(classified: gpd.GeoDataFrame, footprints: gpd.GeoDataFrame, zones: d
 
         near = nb_index.query(geom, predicate="dwithin", distance=NEIGHBOR_DIST_FT)
         nb = nb_layer.iloc[near]
-        nb = nb[nb["parcel_id"] != rec.parcel_id]
+        nb = nb[nb["parcel_id"] != str(rec.parcel_id)]
         neighbors = shapely.union_all(nb.geometry.values) if len(nb) else shapely.GeometryCollection()
 
         res, layers, odd = _fit_one(geom, house, accessories, list(fps["fp_area_sqft"].astype(float)),
@@ -136,7 +146,8 @@ def fit_stage(area: str) -> tuple[Path, Path]:
     base = Path("data/interim") / area
     classified = gpd.read_parquet(base / "parcels_classified.parquet")
     footprints = gpd.read_parquet(base / "footprints.parquet")
-    out, layers = run_fit(classified, footprints, load_zones(), load_run_config())
+    neighbors = gpd.read_parquet(base / NEIGHBORS_FILE)
+    out, layers = run_fit(classified, footprints, load_zones(), load_run_config(), neighbors=neighbors)
     p_fit, p_layers = base / "parcels_fit.parquet", base / "fit_layers.parquet"
     out.to_parquet(p_fit)
     layers.to_parquet(p_layers)

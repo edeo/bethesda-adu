@@ -15,6 +15,7 @@ PARCEL_COLUMNS = [
     "zone_overlap_pct", "zcta", "town", "land_use", "structure",
     "living_area_sqft", "address", "sdat_duplicate", "is_row",
 ]
+NEIGHBORS_FILE = "parcels_neighbors.parquet"
 ROW_ACCOUNT = "ROW"  # raw account value on right-of-way polygons (streets), not real lots
 FOOTPRINT_COLUMNS = [
     "fp_id", "parcel_id", "geometry", "fp_area_sqft", "outside_frac", "is_principal",
@@ -94,6 +95,10 @@ def prepare(raw_dir: Path, out_dir: Path, area: str, sources: dict | None = None
         "geometry": raw_parcels.geometry,
     }, crs=WORKING_CRS)
 
+    # Every raw parcel (repaired, unclipped) so lots at the study-area edge still see their
+    # neighbors when edges are classified.
+    neighbors = parcels[["parcel_id", "is_row", "geometry"]].copy()
+
     # Study-area clip by representative point, so odd-shaped lots stay inside themselves.
     parcels = parcels[parcels.representative_point().within(_study_area(raw_dir, area, run_cfg))]
     parcels = parcels.reset_index(drop=True)
@@ -156,5 +161,6 @@ def prepare(raw_dir: Path, out_dir: Path, area: str, sources: dict | None = None
     out_dir.mkdir(parents=True, exist_ok=True)
     parcels_path, fp_path = out_dir / "parcels_prepared.parquet", out_dir / "footprints.parquet"
     parcels.to_parquet(parcels_path)
+    neighbors.to_parquet(out_dir / NEIGHBORS_FILE)
     fps.to_parquet(fp_path)
     return parcels_path, fp_path

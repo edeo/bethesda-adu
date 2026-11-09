@@ -9,7 +9,7 @@ import pytest
 
 import adu.fit as fit_mod
 from adu.fit import fit_stage, run_fit
-from synth import CRS, rect
+from synth import CRS, X0, rect
 
 R60 = {"adu_eligible": True, "setbacks_ft": {"front": 60, "side": 5, "side_street": 25, "rear": 5},
        "height_ft": 15, "coverage_cap": 0.35, "behind_front_line": True, "behind_rear_building_line": True}
@@ -125,6 +125,7 @@ def test_fit_stage_writes_files(tmp_path, monkeypatch):
     base.mkdir(parents=True)
     block().to_parquet(base / "parcels_classified.parquet")
     footprints().to_parquet(base / "footprints.parquet")
+    block()[["parcel_id", "is_row", "geometry"]].to_parquet(base / "parcels_neighbors.parquet")
     monkeypatch.setattr(fit_mod, "load_zones", lambda: zones())
     monkeypatch.setattr(fit_mod, "load_run_config", lambda: RUN)
     monkeypatch.chdir(tmp_path)
@@ -132,3 +133,33 @@ def test_fit_stage_writes_files(tmp_path, monkeypatch):
     assert p_fit.name == "parcels_fit.parquet" and p_layers.name == "fit_layers.parquet"
     assert subject(gpd.read_parquet(p_fit))["status"] == "fits"
     assert "adu_rect" in set(gpd.read_parquet(p_layers)["layer"])
+
+
+def _east_kinds(layers):
+    """Edge kinds of the subject's east side (x = 60)."""
+    mine = layers[(layers["parcel_id"] == "1") & layers["layer"].isin(["front", "side_street", "side", "rear"])]
+    east = [k for k, g in zip(mine["layer"], mine.geometry)
+            if abs(g.bounds[0] - (X0 + 60)) < 1e-6 and abs(g.bounds[2] - (X0 + 60)) < 1e-6]
+    return east
+
+
+def test_neighbor_outside_clip_not_street():
+    full = block()
+    clipped = full[full["parcel_id"] != "e"]  # east neighbor lies outside the study area
+    neighbors = full[["parcel_id", "is_row", "geometry"]]
+    out, layers = run_fit(clipped, footprints(), zones(), RUN, neighbors=neighbors)
+    s = subject(out)
+    assert _east_kinds(layers) == ["side"]
+    assert "odd_shape" not in s["flags"] and s["status"] == "fits"
+    # Without the unclipped layer the east side looks like a street (the bug being fixed).
+    _, layers_clip = run_fit(clipped, footprints(), zones(), RUN)
+    assert _east_kinds(layers_clip) != ["side"]
+
+
+def test_coverage_over_cap_clamps_to_zero():
+    # lot 7200 * 0.1 = 720 < 1200 sq ft of footprint; the pocket itself is non-empty
+    out, _ = run_fit(block(), footprints(), zones(coverage_cap=0.1), RUN)
+    s = subject(out)
+    assert s["pocket_area_sqft"] > 0
+    assert s["status"] == "no_fit" and s["reason"] == "coverage_exhausted"
+    assert s["usable_footprint_sqft"] == 0
