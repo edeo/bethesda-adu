@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADU verification viewer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; font: 14px/1.4 system-ui, sans-serif; color: #1c1c1c; }
+  body { display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 16px; padding: 8px 14px; background: #1f2933; color: #fff; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  #counter { font-variant-numeric: tabular-nums; }
+  header .spacer { flex: 1; }
+  button { font: inherit; padding: 6px 12px; border: 1px solid #888; border-radius: 4px; background: #f4f4f4; cursor: pointer; }
+  button:hover { background: #e6e6e6; }
+  #main { flex: 1; display: flex; min-height: 0; }
+  #map { flex: 1; min-width: 0; }
+  #panel { width: 340px; overflow-y: auto; padding: 12px; border-left: 1px solid #ccc; background: #fafafa; }
+  #panel h2 { font-size: 15px; margin: 0 0 6px; }
+  .nav { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .nav .pos { flex: 1; text-align: center; color: #555; }
+  table.info { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  table.info td { padding: 2px 4px; border-bottom: 1px solid #e4e4e4; vertical-align: top; }
+  table.info td:first-child { color: #666; white-space: nowrap; width: 1%; }
+  .verdict { display: flex; gap: 8px; margin: 8px 0; }
+  .verdict button { flex: 1; font-size: 16px; padding: 8px; }
+  .verdict button.on-correct { background: #2e9e4f; color: #fff; border-color: #2e9e4f; }
+  .verdict button.on-wrong { background: #d64545; color: #fff; border-color: #d64545; }
+  label { display: block; margin-top: 8px; font-weight: 600; }
+  select, input[type=text] { width: 100%; font: inherit; padding: 5px; }
+  #err { color: #b00020; min-height: 1.3em; margin-top: 4px; }
+  #list { margin-top: 12px; max-height: 220px; overflow-y: auto; border: 1px solid #ddd; background: #fff; }
+  #list div { padding: 3px 8px; cursor: pointer; display: flex; justify-content: space-between; }
+  #list div:hover { background: #eef3f8; }
+  #list div.cur { background: #dbe8f5; font-weight: 600; }
+  .keys { margin-top: 10px; color: #666; font-size: 12px; }
+  #fatal { display: none; margin: 40px auto; max-width: 640px; padding: 20px; border: 2px solid #b00020; background: #fff3f3; }
+  #fatal code { background: #eee; padding: 1px 4px; }
+  #storewarn { display: none; color: #b36b00; font-size: 12px; margin-bottom: 6px; }
+  .legend-note { font-size: 12px; color: #666; margin-top: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ADU verification</h1>
+  <span id="counter">0 of 0 reviewed</span>
+  <span class="spacer"></span>
+  <button id="export" type="button">Export CSV</button>
+</header>
+<div id="fatal"></div>
+<div id="main">
+  <div id="map"></div>
+  <aside id="panel">
+    <div id="storewarn">Browser storage is unavailable; verdicts will be lost on reload. Export before leaving.</div>
+    <div class="nav">
+      <button id="prev" type="button" title="Previous (K)">&larr; K</button>
+      <span class="pos" id="pos"></span>
+      <button id="next" type="button" title="Next (J)">J &rarr;</button>
+    </div>
+    <h2 id="addr"></h2>
+    <table class="info" id="info"></table>
+    <div class="verdict">
+      <button id="ok" type="button">&#10003; Correct (1)</button>
+      <button id="bad" type="button">&#10007; Wrong (2)</button>
+    </div>
+    <label for="reason">Reason (required for &#10007;)</label>
+    <select id="reason">
+      <option value="">Select a reason...</option>
+      <option value="wrong_house">wrong_house</option>
+      <option value="wrong_front">wrong_front</option>
+      <option value="footprint_misaligned">footprint_misaligned</option>
+      <option value="setback_wrong">setback_wrong</option>
+      <option value="other">other</option>
+    </select>
+    <div id="err" role="alert"></div>
+    <label for="note">Note</label>
+    <input type="text" id="note" autocomplete="off">
+    <div id="list"></div>
+    <div class="keys">Keys: J next, K previous, 1 = &#10003;, 2 = &#10007;. Toggle layers with the control on the map.</div>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var REASONS = ["wrong_house", "wrong_front", "footprint_misaligned", "setback_wrong", "other"];
+  var $ = function (id) { return document.getElementById(id); };
+
+  function fatal(html) {
+    var f = $("fatal");
+    f.innerHTML = html;
+    f.style.display = "block";
+    $("main").style.display = "none";
+  }
+
+  fetch("sample.geojson")
+    .then(function (r) {
+      if (!r.ok) { throw new Error("HTTP " + r.status); }
+      return r.json();
+    })
+    .then(start)
+    .catch(function (e) {
+      fatal("<h2>Could not load sample.geojson</h2>" +
+        "<p>This page must be served over http, not opened as a file. From the project root run:</p>" +
+        "<p><code>uv run python -m adu viewer</code> (if sample.geojson is missing)<br>" +
+        "<code>python -m http.server 8000</code></p>" +
+        "<p>then open <code>http://localhost:8000/viewer/</code>.</p>" +
+        "<p>Details: " + String(e && e.message ? e.message : e).replace(/</g, "&lt;") + "</p>");
+    });
+
+  function start(data) {
+    var area = data.area || "pilot";
+    var features = data.features || [];
+    var STORE_KEY = "adu-verify:" + area;
+    var verdicts = {};
+    var idx = 0;
+
+    // ---- storage (every access guarded) ----
+    function loadStore() {
+      try {
+        var raw = window.localStorage.getItem(STORE_KEY);
+        if (raw) { verdicts = JSON.parse(raw) || {}; }
+      } catch (e) { $("storewarn").style.display = "block"; verdicts = {}; }
+    }
+    function saveStore() {
+      try { window.localStorage.setItem(STORE_KEY, JSON.stringify(verdicts)); }
+      catch (e) { $("storewarn").style.display = "block"; }
+    }
+    loadStore();
+
+    // ---- map ----
+    var map = L.map("map", { maxZoom: 21 });
+
+    var MdImagery = L.TileLayer.extend({
+      getTileUrl: function (coords) {
+        var b = this._tileCoordsToBounds(coords);
+        var sw = L.CRS.EPSG3857.project(b.getSouthWest());
+        var ne = L.CRS.EPSG3857.project(b.getNorthEast());
+        return data.imagery.url + "/export?bbox=" + [sw.x, sw.y, ne.x, ne.y].join(",") +
+          "&bboxSR=3857&imageSR=3857&size=256,256&format=jpg&transparent=false&f=image";
+      }
+    });
+    var mdi = new MdImagery("", { maxZoom: 21, maxNativeZoom: 20, tileSize: 256,
+      attribution: "MD iMap six-inch imagery" });
+    var esri = L.tileLayer(data.imagery.fallback, { maxZoom: 21, maxNativeZoom: 19,
+      attribution: "Esri World Imagery" });
+    mdi.addTo(map);
+
+    var STYLES = {
+      parcel:      { label: "parcel outline", style: { color: "#ffffff", weight: 2, fill: false } },
+      front:       { label: "front edge", style: { color: "#e53935", weight: 4 } },
+      side_street: { label: "side-street edge", style: { color: "#fb8c00", weight: 4 } },
+      side:        { label: "side edge", style: { color: "#9e9e9e", weight: 4 } },
+      rear:        { label: "rear edge", style: { color: "#1e88e5", weight: 4 } },
+      envelope:    { label: "setback envelope", style: { color: "#ffee58", weight: 2, dashArray: "6 6", fill: false } },
+      pocket:      { label: "pocket", style: { color: "#2e7d32", weight: 1, fillColor: "#43a047", fillOpacity: 0.35 } },
+      adu_rect:    { label: "ADU rectangle", style: { color: "#8e24aa", weight: 2, fillColor: "#ab47bc", fillOpacity: 0.45 } },
+      house:       { label: "house footprint", style: { color: "#00e5ff", weight: 4, fill: false } },
+      accessory:   { label: "accessory footprints", style: { color: "#00e5ff", weight: 1, fill: false } }
+    };
+    var ORDER = ["parcel", "envelope", "pocket", "adu_rect", "front", "side_street", "side", "rear", "house", "accessory"];
+    var groups = {};
+    var overlays = {};
+    ORDER.forEach(function (k) {
+      groups[k] = L.layerGroup().addTo(map);
+      overlays[STYLES[k].label] = groups[k];
+    });
+    L.control.layers({ "MD iMap six-inch (2023)": mdi, "Esri World Imagery": esri }, overlays,
+      { collapsed: false }).addTo(map);
+
+    function drawParcel(f) {
+      ORDER.forEach(function (k) {
+        groups[k].clearLayers();
+        var g = k === "parcel" ? f.geometry : (f.properties.layers || {})[k];
+        if (g) {
+          groups[k].addLayer(L.geoJSON(g, { style: function () { return STYLES[k].style; },
+            interactive: false }));
+        }
+      });
+      var b = L.geoJSON(f.geometry).getBounds();
+      if (b.isValid()) { map.fitBounds(b, { padding: [60, 60], maxZoom: 20 }); }
+    }
+
+    // ---- panel ----
+    function fmt(v, d) {
+      if (v === null || v === undefined || v === "") { return "-"; }
+      return typeof v === "number" ? v.toLocaleString(undefined, { maximumFractionDigits: d === undefined ? 1 : d }) : String(v);
+    }
+    var ROWS = [
+      ["parcel_id", "parcel id"], ["sdat_account", "SDAT account"], ["zone", "zone"],
+      ["lot_area_sqft", "lot sqft"], ["living_area_sqft", "living sqft"],
+      ["status", "status"], ["reason", "reason"], ["flags", "flags"],
+      ["fit_result", "fit result"], ["fit_reason", "fit reason"], ["pocket_area_sqft", "pocket sqft"],
+      ["rect_w_ft", "rect w ft"], ["rect_l_ft", "rect l ft"],
+      ["usable_footprint_sqft", "usable footprint"], ["max_adu_floor_area", "max ADU floor"],
+      ["stratum", "sample stratum"]
+    ];
+
+    function renderInfo(p) {
+      $("addr").textContent = p.address || "(no address)";
+      var t = $("info");
+      t.textContent = "";
+      ROWS.forEach(function (r) {
+        var tr = document.createElement("tr");
+        var a = document.createElement("td"); a.textContent = r[1];
+        var b = document.createElement("td"); b.textContent = fmt(p[r[0]], r[0].indexOf("sqft") > 0 ? 0 : 1);
+        tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
+      });
+    }
+
+    function entry(pid) { return verdicts[pid] || { verdict: "", reason: "", note: "" }; }
+    function reviewedCount() {
+      return features.filter(function (f) { return entry(f.properties.parcel_id).verdict; }).length;
+    }
+
+    function renderVerdict() {
+      var pid = features[idx].properties.parcel_id, e = entry(pid);
+      $("ok").className = e.verdict === "correct" ? "on-correct" : "";
+      $("bad").className = e.verdict === "wrong" ? "on-wrong" : "";
+      $("reason").value = e.reason || "";
+      if (document.activeElement !== $("note")) { $("note").value = e.note || ""; }
+      $("err").textContent = "";
+      $("counter").textContent = reviewedCount() + " of " + features.length + " reviewed";
+      renderList();
+    }
+
+    function renderList() {
+      var l = $("list");
+      l.textContent = "";
+      features.forEach(function (f, i) {
+        var d = document.createElement("div");
+        if (i === idx) { d.className = "cur"; }
+        var v = entry(f.properties.parcel_id).verdict;
+        var a = document.createElement("span"); a.textContent = f.properties.parcel_id + " " + f.properties.status;
+        var b = document.createElement("span"); b.textContent = v === "correct" ? "✓" : v === "wrong" ? "✗" : "";
+        d.appendChild(a); d.appendChild(b);
+        d.addEventListener("click", function () { go(i); });
+        l.appendChild(d);
+      });
+      var cur = l.querySelector(".cur");
+      if (cur && cur.scrollIntoView) { cur.scrollIntoView({ block: "nearest" }); }
+    }
+
+    function go(i) {
+      if (!features.length) { return; }
+      idx = (i + features.length) % features.length;
+      var f = features[idx];
+      $("pos").textContent = (idx + 1) + " / " + features.length;
+      renderInfo(f.properties);
+      drawParcel(f);
+      renderVerdict();
+    }
+
+    function setVerdict(v) {
+      var pid = features[idx].properties.parcel_id, e = entry(pid);
+      if (v === "wrong") {
+        var r = $("reason").value;
+        if (REASONS.indexOf(r) < 0) {
+          $("err").textContent = "Choose a reason before marking this wrong.";
+          $("reason").focus();
+          return;
+        }
+        e.reason = r;
+      } else {
+        e.reason = "";
+      }
+      e.verdict = v;
+      e.note = $("note").value;
+      verdicts[pid] = e;
+      saveStore();
+      renderVerdict();
+    }
+
+    $("ok").addEventListener("click", function () { setVerdict("correct"); });
+    $("bad").addEventListener("click", function () { setVerdict("wrong"); });
+    $("prev").addEventListener("click", function () { go(idx - 1); });
+    $("next").addEventListener("click", function () { go(idx + 1); });
+
+    $("reason").addEventListener("change", function () {
+      var pid = features[idx].properties.parcel_id, e = entry(pid);
+      var r = $("reason").value;
+      if (e.verdict === "wrong") {
+        if (!r) {
+          $("err").textContent = "A wrong verdict needs a reason.";
+          $("reason").value = e.reason;
+          return;
+        }
+        e.reason = r;
+        verdicts[pid] = e;
+        saveStore();
+      }
+      $("err").textContent = "";
+    });
+
+    $("note").addEventListener("input", function () {
+      var pid = features[idx].properties.parcel_id, e = entry(pid);
+      e.note = $("note").value;
+      verdicts[pid] = e;
+      saveStore();
+    });
+
+    document.addEventListener("keydown", function (ev) {
+      var t = ev.target, tag = t && t.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) { return; }
+      if (ev.ctrlKey || ev.metaKey || ev.altKey) { return; }
+      var k = ev.key.toLowerCase();
+      if (k === "j") { go(idx + 1); }
+      else if (k === "k") { go(idx - 1); }
+      else if (k === "1") { setVerdict("correct"); }
+      else if (k === "2") { setVerdict("wrong"); }
+    });
+
+    // ---- export ----
+    function csvCell(v) {
+      var s = v === null || v === undefined ? "" : String(v);
+      return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+    function today() {
+      var d = new Date(), z = function (n) { return (n < 10 ? "0" : "") + n; };
+      return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate());
+    }
+    $("export").addEventListener("click", function () {
+      var lines = ["parcel_id,status,verdict,reason,note"];
+      features.forEach(function (f) {
+        var p = f.properties, e = entry(p.parcel_id);
+        if (!e.verdict) { return; }
+        lines.push([p.parcel_id, p.status, e.verdict, e.verdict === "correct" ? "" : e.reason, e.note]
+          .map(csvCell).join(","));
+      });
+      var blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "verification_" + today() + ".csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    });
+
+    if (features.length) { go(0); } else { $("counter").textContent = "0 of 0 reviewed"; }
+  }
+})();
+</script>
+</body>
+</html>

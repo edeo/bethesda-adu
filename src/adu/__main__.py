@@ -63,9 +63,18 @@ def main(argv: list[str] | None = None) -> None:
     run.add_argument("--from", dest="start", choices=STAGES, default="fetch",
                      help="skip the stages before this one and use their existing outputs")
     run.add_argument("--force-fetch", action="store_true", help="re-download raw data")
+    viewer = sub.add_parser("viewer", help="build the aerial verification viewer")
+    viewer.add_argument("--area", choices=("pilot", "full"), default="pilot")
     args = parser.parse_args(argv)
     if args.command == "run":
         _run(args, parser)
+    elif args.command == "viewer":
+        from adu.viewer import build_viewer
+
+        out = build_viewer(args.area)
+        print(f"wrote {out}/index.html and {out}/sample.geojson")
+        print("serve with: python -m http.server 8000")
+        print("then open:  http://localhost:8000/viewer/")
 
 
 if __name__ == "__main__":
