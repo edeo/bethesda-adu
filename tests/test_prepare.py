@@ -119,3 +119,13 @@ def test_pilot_drops_parcels_outside_zcta_union(raw, tmp_path, run_cfg):
     raw.zone(rect(-50, -50, 2000, 200), "R-60")
     parcels, _ = run(raw, tmp_path, run_cfg)
     assert parcels["parcel_id"].tolist() == ["1"]
+
+
+def test_row_polygons_kept_and_flagged(raw, tmp_path, run_cfg):
+    basic(raw)
+    raw.parcel(rect(0, -50, 100, 50), 2, "ROW", None)  # street right-of-way, no district
+    parcels, _ = run(raw, tmp_path, run_cfg)
+    by_id = parcels.set_index("parcel_id")
+    assert parcels["is_row"].dtype == bool
+    assert bool(by_id.loc["2", "is_row"]) is True
+    assert bool(by_id.loc["1", "is_row"]) is False

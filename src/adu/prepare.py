@@ -13,8 +13,9 @@ WORKING_CRS = "EPSG:2248"
 PARCEL_COLUMNS = [
     "parcel_id", "sdat_account", "geometry", "lot_area_sqft", "zone",
     "zone_overlap_pct", "zcta", "town", "land_use", "structure",
-    "living_area_sqft", "address", "sdat_duplicate",
+    "living_area_sqft", "address", "sdat_duplicate", "is_row",
 ]
+ROW_ACCOUNT = "ROW"  # raw account value on right-of-way polygons (streets), not real lots
 FOOTPRINT_COLUMNS = [
     "fp_id", "parcel_id", "geometry", "fp_area_sqft", "outside_frac", "is_principal",
 ]
@@ -89,6 +90,7 @@ def prepare(raw_dir: Path, out_dir: Path, area: str, sources: dict | None = None
         "parcel_id": raw_parcels[pf["parcel_id"]].astype(str),
         "sdat_account": _eval_transform(raw_parcels, sources["parcels"]["join_transform"])
         .astype(object).where(lambda s: s.notna(), None),
+        "is_row": (raw_parcels[pf["sdat_account"]].astype(str).str.strip() == ROW_ACCOUNT).astype(bool),
         "geometry": raw_parcels.geometry,
     }, crs=WORKING_CRS)
 
