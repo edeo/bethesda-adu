@@ -126,17 +126,21 @@ def test_front_building_line_offset():
 
 
 def test_through_lot_rear_rule_from_nearest_front():
-    edges = rect_edges(60, 120, north="front")
-    house = rect(15, 20, 30, 30)  # 20 ft from the south front, 70 ft from the north front
-    r = rule(front=5, behind_rear_building_line=True)
+    edges = rect_edges(60, 200, north="front")
+    house = rect(15, 25, 30, 40)  # 25 ft from the south front, rear wall at 65 ft
+    r = rule(front=25, side=5, rear=5, behind_rear_building_line=True)
     w = exclusion_widths(edges, house, r)
-    assert abs(w[0] - 50) < 0.01  # south (nearest): rear wall
-    assert abs(w[2] - 70) < 0.01  # north: min distance only
+    assert abs(w[0] - 65) < 0.01  # south (nearest): rear wall
+    assert w[2] == 0  # north (far) frontage: no front-yard exclusion
     assert w[1] == 0 and w[3] == 0
+    pieces = build_pocket(rect(0, 0, 60, 200), edges, house, [], r, RUN)
+    assert pieces
+    u = pocket_union(pieces)
+    assert min_y(u) >= 65 - 0.01
+    assert u.bounds[3] - Y0 <= 175 + 0.01 and u.bounds[3] - Y0 > 174  # far front setback only
     # house nearer the north front: the roles swap
-    house_n = rect(15, 80, 30, 30)
-    w = exclusion_widths(edges, house_n, r)
-    assert abs(w[2] - 40) < 0.01 and abs(w[0] - 80) < 0.01
+    w = exclusion_widths(edges, rect(15, 135, 30, 40), r)
+    assert abs(w[2] - 65) < 0.01 and w[0] == 0
 
 
 def test_split_frontage_shares_width():

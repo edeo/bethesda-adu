@@ -63,7 +63,13 @@ def _max_distance(line: BaseGeometry, house: Polygon) -> float:
 
 
 def exclusion_widths(edges: list[Edge], house: Polygon, zone_rule: dict) -> list[float]:
-    """Per-edge width (ft) of the placement-rule strip removed on the parcel side; 0 = none."""
+    """Per-edge width (ft) of the placement-rule strip removed on the parcel side; 0 = none.
+
+    Only the frontage nearest the house gets the front rule (rear-wall rule when
+    `behind_rear_building_line`, else min distance + `front_building_line_offset_ft` when
+    `behind_front_line`). Other frontages (through lots) get no exclusion, only their
+    setback in the envelope. Side streets get the min distance when either flag is set.
+    """
     rear_rule = bool(zone_rule.get("behind_rear_building_line"))
     front_rule = bool(zone_rule.get("behind_front_line"))
     offset = float(zone_rule.get("front_building_line_offset_ft", 0) or 0)
@@ -73,9 +79,11 @@ def exclusion_widths(edges: list[Edge], house: Polygon, zone_rule: dict) -> list
     unions = [unary_union([edges[i].geom for i in idx]) for idx in frontages]
     nearest = min(range(len(unions)), key=lambda k: unions[k].distance(house)) if unions else None
     for k, (idx, line) in enumerate(zip(frontages, unions)):
-        if rear_rule and k == nearest:
+        if k != nearest:
+            w = 0.0  # far frontage of a through lot: the area behind the house is rear yard
+        elif rear_rule:
             w = _max_distance(line, house)
-        elif front_rule or rear_rule:
+        elif front_rule:
             w = line.distance(house) + offset
         else:
             w = 0.0
