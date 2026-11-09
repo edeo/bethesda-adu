@@ -247,15 +247,29 @@ def _classify_polygon(poly: Polygon, neighbors: BaseGeometry, corner_lot_front: 
             front_geom = junction
             front_axis = _chord_dir(list(junction.coords))
     else:
+        same_side = False
         if len(runs) == 2:
             r1, r2 = runs
-            parallel = _axis_diff(_run_axis(lines, r1), _run_axis(lines, r2)) <= PARALLEL_DEG
-            if parallel and not _adjacent(r1, r2, n, lines):
+            # Directed bearings: on a CCW ring opposite sides run in opposite directions, while
+            # a frontage split on the same side (e.g. by a neighbor notch) keeps its direction.
+            turn = _dir_diff(_run_axis(lines, r1), _run_axis(lines, r2))
+            adjacent = _adjacent(r1, r2, n, lines)
+            if turn >= 180.0 - PARALLEL_DEG and not adjacent:
                 through = True
+            elif turn <= PARALLEL_DEG:
+                same_side = True
+            elif not adjacent:
+                odd = True  # neither a corner nor opposite frontages; corner labels are a best guess
         if through:
             for r in runs:
                 for i in r:
                     kind[i] = "front"
+        elif same_side:  # one frontage in pieces: all front, primary front is their union
+            for r in runs:
+                for i in r:
+                    kind[i] = "front"
+            front_geom = shapely.union_all([lines[i] for i in runs[0] + runs[1]])
+            front_axis = _run_axis(lines, max(runs, key=lambda r: _run_length(lines, r)))
         else:
             if len(runs) == 2:
                 ordered = sorted(runs, key=lambda r: _run_length(lines, r))

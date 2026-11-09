@@ -140,6 +140,27 @@ def test_three_street_runs_is_odd():
     assert odd
 
 
+def test_notched_frontage_not_through():
+    notch = rect(45, 0, 10, 10)
+    lot = rect(0, 0, 100, 100).difference(notch)
+    nb = unary_union([notch, rect(-100, 0, 100, 100), rect(100, 0, 100, 100), rect(0, 100, 100, 100)])
+    edges, odd = classify_edges(lot, nb, "shorter")
+    assert not odd
+    fronts = of_kind(edges, "front")
+    assert len(fronts) == 2 and all(abs(mid(e)[1]) < 1 for e in fronts)
+    rears = of_kind(edges, "rear")
+    assert len(rears) == 1 and abs(mid(rears[0])[1] - 100) < 1
+
+
+def test_two_unrelated_runs_is_odd():
+    corner = rect(50, 0, 10, 10)  # neighbor parcel cut out of the SE corner separates the two streets
+    lot = rect(0, 0, 60, 100).difference(corner)
+    nb = unary_union([corner, rect(-60, 0, 60, 100), rect(0, 100, 60, 100)])
+    edges, odd = classify_edges(lot, nb, "shorter")
+    assert odd
+    assert of_kind(edges, "front")
+
+
 def test_neighbors_including_parcel_itself():
     lot = rect(0, 0, 60, 100)
     nb = unary_union([lot, rect(-60, 0, 60, 100), rect(60, 0, 60, 100), rect(0, 100, 60, 100)])
