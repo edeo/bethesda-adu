@@ -53,3 +53,22 @@ def load_zones(path: Path = Path("config/zones.yaml")) -> dict:
             node = node.get(k) if isinstance(node, dict) else None
         _check_citation(".".join(keys), node)
     return data
+
+
+SOURCE_KEYS = ("parcels", "zoning", "footprints", "sdat", "zcta", "places", "imagery")
+SOURCE_FIELDS = ("url", "layer_type", "verified")
+LAYER_TYPES = ("arcgis_rest", "xyz_tiles")
+
+
+def load_sources(path: Path = Path("config/sources.yaml")) -> dict:
+    data = _load_yaml(path)
+    for key in SOURCE_KEYS:
+        source = data.get(key)
+        if not isinstance(source, dict):
+            raise ConfigError(f"source {key}: missing")
+        for field in SOURCE_FIELDS:
+            if not source.get(field):
+                raise ConfigError(f"source {key}: missing field {field}")
+        if source["layer_type"] not in LAYER_TYPES:
+            raise ConfigError(f"source {key}: bad layer_type {source['layer_type']}")
+    return data

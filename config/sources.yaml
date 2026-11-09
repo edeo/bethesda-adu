@@ -1,0 +1,118 @@
+# Data endpoints. Each was tested on 2026-11-08 with a single-record query
+# (resultRecordCount=1&f=json) or, for imagery, one export/tile request.
+# Details and test results: docs/research/regulatory-notes.md ("Data endpoints").
+#
+# fields: role -> field name on that layer.
+# join_key: field on THIS layer used to join to another layer (null if spatial join).
+
+parcels:
+  url: "https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/property/MapServer/0"
+  layer_type: arcgis_rest
+  fields:
+    parcel_id: OBJECTID
+    sdat_account: ACCT        # 8-digit county account, unique only within DISTRICT
+    sdat_district: DISTRICT   # 2-digit election district
+  join_key: ACCT
+  # SDAT ACCTID (12 chars) = "16" (Montgomery) + DISTRICT + ACCT, e.g. 07 + 00429817 -> 160700429817.
+  # Verified on 3 pilot parcels.
+  join_transform: "'16' + DISTRICT + ACCT"
+  max_record_count: 1000
+  notes: "County 'Property' layer (M-NCPPC parcels with SDAT attributes), LOAD_DATE 2026-11-05. Also carries LANDUSE_CODE (111 = Single Family Detached), GR_FLR_AREA and premise address, usable as an SDAT cross-check."
+  fallback:
+    url: "https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_ParcelBoundaries/MapServer/0"
+    layer_type: arcgis_rest
+    fields: {parcel_id: OBJECTID, sdat_account: ACCTID}
+    join_key: ACCTID
+    where: "JURSCODE = 'MONT'"
+    notes: "MD iMap parcel polygons; ACCTID matches SDAT directly; POLYDATE 2024JAN (older than county layer). Non-account polygons have ACCTID 'ROW' etc."
+  verified: "2026-11-08"
+
+zoning:
+  url: "https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/zoning/FeatureServer/1"
+  layer_type: arcgis_rest
+  fields:
+    zone: ZONE                # e.g. "R-60", "CRT-0.5"; matches config/zones.yaml keys
+  join_key: null
+  max_record_count: 1000
+  notes: "County-hosted copy of the M-NCPPC zoning layer ('updated weekly from MNCPPC'). LONGZONE has full CR strings (e.g. 'CRT-0.5 C-0.5 R-0.5 H-45'). Spatial queries with outStatistics fail on this server; plain attribute queries with a polygon filter work."
+  fallback: null
+  verified: "2026-11-08"
+
+footprints:
+  url: "https://gis.montgomerycountymd.gov/arcgis/rest/services/General/BLDG_PS/MapServer/0"
+  layer_type: arcgis_rest
+  fields:
+    building_id: BLDG_ID
+    building_class: BLDG_CLASS   # P = largest bldg at an address, S = smaller separate bldg, Q = connected/unit
+    account: BLDG_PROP_TAX_ID
+    edit_date: BLDG_DATE
+  join_key: null
+  max_record_count: 2000
+  notes: "County building footprints (public-safety/addressing layer). In the pilot bbox 432 of 588 footprints carry BLDG_DATE 2003; small sheds are mostly absent (22 footprints < 200 sf). Rebuilt houses may be stale - check in pilot verification."
+  fallback:
+    url: "https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_BuildingFootprints/MapServer/0"
+    layer_type: arcgis_rest
+    fields: {building_id: OBJECTID}
+    join_key: null
+    notes: "Statewide MD iMap footprints; geometry only. The spec's Microsoft US Building Footprints blob (usbuildingdata.blob.core.windows.net) returned HTTP 409 'Public access is not permitted' on 2026-11-08, so it is not used."
+  verified: "2026-11-08"
+
+sdat:
+  url: "https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0"
+  layer_type: arcgis_rest
+  fields:
+    sdat_account: ACCTID
+    land_use: LU              # codes in config/zones.yaml sfd_codes.land_use
+    structure: STRUBLDG       # codes in config/zones.yaml sfd_codes.structure
+    living_area: SQFTSTRC     # "Structure Square Footage" (SDAT enclosed living area, sq ft)
+    address: ADDRESS
+  join_key: ACCTID
+  where: "JURSCODE = 'MONT'"
+  max_record_count: 2000
+  notes: "MD iMap 'Maryland Parcel Points' (SDAT real property), SDATDATE 2026AUG. Point layer; join to parcels by account, not spatially. ADDRESS is null for some vacant parcels."
+  fallback:
+    url: "https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/property/MapServer/0"
+    layer_type: arcgis_rest
+    fields: {sdat_account: ACCT, land_use: LANDUSE_CODE, structure: DWELLING_TYPE, living_area: GR_FLR_AREA, address: PREMISE_ADDR_STREET}
+    join_key: ACCT
+    notes: "County copy of SDAT attributes on the parcel polygons. Codes differ: LANDUSE_CODE 111 = SFD; DWELLING_TYPE has a letter prefix (A001/B001/C001...). sfd_codes would need county equivalents if this fallback is used."
+  verified: "2026-11-08"
+
+zcta:
+  url: "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1"
+  layer_type: arcgis_rest
+  fields:
+    zcta: ZCTA5
+  join_key: null
+  where: "ZCTA5 IN ('20814','20816','20817')"
+  fallback: null
+  verified: "2026-11-08"
+
+places:
+  url: "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/4"
+  layer_type: arcgis_rest
+  fields:
+    name: NAME
+  join_key: null
+  where: "STATE = '24'"   # excludes 'Washington city' (DC), which intersects the study envelope
+  notes: "Incorporated places. In the study envelope: Somerset town, Glen Echo town, Chevy Chase View town, Garrett Park town, Chevy Chase Village town, Chevy Chase town, Kensington town. Bethesda is a CDP and is not in this layer."
+  fallback:
+    url: "https://gis.montgomerycountymd.gov/arcgis/rest/services/General/municipalities/MapServer/0"
+    layer_type: arcgis_rest
+    fields: {name: AREA_NAME}
+    join_key: null
+    notes: "County municipalities layer (single-record query OK; also has INCORPORAT and OFFICIAL_N). Unlike TIGER it may include special taxing districts such as Drummond; filter on INCORPORAT if used."
+  verified: "2026-11-08"
+
+imagery:
+  url: "https://mdgeodata.md.gov/imagery/rest/services/SixInch/SixInchImagery2023_2024_2025/MapServer"
+  layer_type: arcgis_rest
+  fields: {}
+  join_key: null
+  notes: "MD iMap six-inch orthoimagery; Montgomery flown 2023 (leaf-off). Use the MapServer /export endpoint (bbox, bboxSR=4326, imageSR=3857, format=jpg). Its cache uses a non-standard tiling origin and 512-px tiles, so /tile/{z}/{y}/{x} does not work as plain XYZ. The combined 'SixInchImagery' MapServer returned a near-empty image at pilot scale; the 2023_2024_2025 service returned a full image."
+  fallback:
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    layer_type: xyz_tiles
+    fields: {}
+    join_key: null
+  verified: "2026-11-08"

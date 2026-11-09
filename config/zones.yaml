@@ -1,17 +1,251 @@
-# Skeleton. Real values and citations arrive in Task 2.
+# Per-zone detached-ADU rules for Bethesda ZCTAs 20814 / 20816 / 20817.
+# Researched 2026-11-08. Full sources, conditions and simplifications:
+#   docs/research/regulatory-notes.md
+#
+# Legal basis: a detached ADU "must comply with the setback, height, and building
+# lot coverage standards of an accessory structure in the underlying zone"
+# (Ch. 59 §3.3.3.A.2.c.v, as amended by Ord. 20-36 / ZTA 26-06, effective 2026-10-05).
+# So every setback/height below is the zone's ACCESSORY STRUCTURE standard for the
+# detached-house building type (standard method), and coverage_cap is the zone's
+# lot coverage max for a detached house (all buildings combined).
+#
+# Keys must equal the ZONE field of the county zoning layer exactly (it carries the
+# CR/CRT/... density suffix). Every ZONE value found in the three ZCTAs on
+# 2026-11-08 is listed; anything else is treated as zone_ineligible downstream.
+#
+# Conventions:
+#   setbacks_ft.front        distance from front lot line (accessory front setback)
+#   setbacks_ft.side/rear    value for an ADU 15'-20' tall where the zone adds 2 ft of
+#                            side/rear setback per foot of height over 15 ft
+#                            (R-60, R-90, R-40); i.e. base 5' + 10' = 15'. See notes.
+#   setbacks_ft.side_street  the larger of the zone's two side-street cases
+#   behind_front_line        ADU must not sit between the front lot line and the house
+#   behind_rear_building_line (extra) ADU must be wholly behind the rear wall of the
+#                            house (stricter than behind_front_line). Pipeline must
+#                            enforce this for these zones; see notes.
+#   front_building_line_offset_ft (extra) ADU must be this far behind the front
+#                            wall of the house (zones whose accessory front setback is
+#                            written as "N' behind front building line").
+#   confidence (extra)       confirmed = read from current Ch. 59 text; unconfirmed =
+#                            best-sourced value needing user check.
+
 zones:
+  # ---------- Residential Detached zones ----------
+  RE-2:
+    adu_eligible: true
+    setbacks_ft: {front: 80, side: 15, side_street: 50, rear: 10}
+    height_ft: 50
+    coverage_cap: 0.25
+    behind_front_line: true
+    behind_rear_building_line: true
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.4.B (RE-2 standard method, detached house): lot coverage 25%; accessory structure setbacks front 80', side street 50'/20', side 15', rear 10' (12' corner); spec. c behind rear building line; accessory height 50'. Ord. 20-36 §3.3.3.A.2.c.v. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-2889"
+  RE-2C:
+    adu_eligible: true
+    setbacks_ft: {front: 80, side: 15, side_street: 50, rear: 10}
+    height_ft: 50
+    coverage_cap: 0.25
+    behind_front_line: true
+    behind_rear_building_line: true
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.5.B (RE-2C standard method, detached house): lot coverage 25%; accessory setbacks front 80', side street 50'/20', side 15', rear 10' (12' corner); spec. c behind rear building line; accessory height 50'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60197"
+  RE-1:
+    adu_eligible: true
+    setbacks_ft: {front: 80, side: 15, side_street: 50, rear: 10}
+    height_ft: 50
+    coverage_cap: 0.15
+    behind_front_line: true
+    behind_rear_building_line: true
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.6.B (RE-1 standard method, detached house): lot coverage 15%; accessory setbacks front 80', side street 50'/20', side 15', rear 10' (12' corner); spec. c behind rear building line; accessory height 50'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60198"
+  R-200:
+    adu_eligible: true
+    setbacks_ft: {front: 65, side: 12, side_street: 40, rear: 7}
+    height_ft: 35
+    coverage_cap: 0.25
+    behind_front_line: true
+    behind_rear_building_line: true
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.7.B (R-200 standard method, detached house): lot coverage 25%; accessory setbacks front 65', side street 40'/15', side 12', rear 7' (12' corner); spec. a behind rear building line; accessory height 35'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60199"
+  R-90:
+    adu_eligible: true
+    setbacks_ft: {front: 60, side: 15, side_street: 30, rear: 15}
+    height_ft: 20
+    coverage_cap: 0.30
+    behind_front_line: true
+    behind_rear_building_line: true
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.8.B (R-90 standard method, detached house): lot coverage 30%; accessory setbacks front 60', side street 30'/15', side 5', rear 5' (10' corner); spec. a behind rear building line; spec. b +2' side/rear per ft of height over 15' (20' ADU -> 15'); accessory height 20'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60200"
   R-60:
     adu_eligible: true
-    setbacks_ft: {front: 25, side: 8, side_street: 25, rear: 20}
-    height_ft: 35
+    setbacks_ft: {front: 60, side: 15, side_street: 25, rear: 15}
+    height_ft: 20
     coverage_cap: 0.35
     behind_front_line: true
-    citation: "PLACEHOLDER"
+    behind_rear_building_line: true
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.9.B (R-60 standard method, detached house): lot coverage 35%; accessory setbacks front 60', side street 25'/15', side 5', rear 5' (10' corner); spec. a behind rear building line; spec. b +2' side/rear per ft of height over 15' (20' ADU -> 15'); accessory height 20'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60201"
+  R-40:
+    # Not mapped in the study area on 2026-11-08; kept so a rezoning is not silently dropped.
+    adu_eligible: true
+    setbacks_ft: {front: 60, side: 15, side_street: 25, rear: 15}
+    height_ft: 20
+    coverage_cap: 0.35
+    behind_front_line: true
+    behind_rear_building_line: true
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.10.B (R-40 standard method, detached house column): lot coverage 35%; accessory setbacks front 60', side street 25'/15', side 5', rear 5' (10' corner); spec. a behind rear building line; spec. b +2' side/rear per ft over 15'; accessory height 20'. Detached ADU added to R-40 by Ord. 20-36. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60207"
+
+  # ---------- Residential Townhouse / Multi-Unit zones (detached-house column) ----------
+  TLD:
+    adu_eligible: true
+    setbacks_ft: {front: 20, side: 4, side_street: 15, rear: 4}
+    height_ft: 25
+    coverage_cap: 0.35
+    behind_front_line: true
+    front_building_line_offset_ft: 10
+    behind_rear_building_line: false
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.11.B (TLD standard method, detached house): lot coverage 35%; principal front 20'; accessory setbacks front 10' behind front building line, side street 15', side 4', rear 4'; accessory height 25'. Detached ADU added to TLD by Ord. 20-36. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60209"
+  TMD:
+    adu_eligible: true
+    setbacks_ft: {front: 20, side: 4, side_street: 15, rear: 4}
+    height_ft: 25
+    coverage_cap: 0.40
+    behind_front_line: true
+    front_building_line_offset_ft: 10
+    behind_rear_building_line: false
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.12.B (TMD standard method, detached house): lot coverage 40%; principal front 20'; accessory setbacks front 10' behind front building line, side street 15', side 4', rear 4'; accessory height 25'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60211"
+  THD:
+    adu_eligible: true
+    setbacks_ft: {front: 20, side: 4, side_street: 15, rear: 4}
+    height_ft: 25
+    coverage_cap: 0.50
+    behind_front_line: true
+    front_building_line_offset_ft: 10
+    behind_rear_building_line: false
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.13.B (THD standard method, detached house): lot coverage 50%; principal front 20'; accessory setbacks front 10' behind front building line, side street 15', side 4', rear 4'; accessory height 25'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60213"
+  R-30:
+    adu_eligible: true
+    setbacks_ft: {front: 20, side: 4, side_street: 15, rear: 4}
+    height_ft: 25
+    coverage_cap: 0.50
+    behind_front_line: true
+    front_building_line_offset_ft: 10
+    behind_rear_building_line: false
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.14.B (R-30 standard method, detached house): lot coverage 50%; principal front 20'; accessory setbacks front 10' behind front building line, side street 15', side 4', rear 4'; accessory height 25'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60215"
+  R-20:
+    adu_eligible: true
+    setbacks_ft: {front: 20, side: 4, side_street: 15, rear: 4}
+    height_ft: 25
+    coverage_cap: 0.75
+    behind_front_line: true
+    front_building_line_offset_ft: 10
+    behind_rear_building_line: false
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.15.B (R-20 standard method, detached house): lot coverage 75%; principal front 20'; accessory setbacks front 10' behind front building line, side street 15', side 4', rear 4'; accessory height 25'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60217"
+  R-10:
+    adu_eligible: true
+    setbacks_ft: {front: 20, side: 4, side_street: 15, rear: 4}
+    height_ft: 25
+    coverage_cap: 0.90
+    behind_front_line: true
+    front_building_line_offset_ft: 10
+    behind_rear_building_line: false
+    confidence: confirmed
+    citation: "Ch. 59 §4.4.16.B (R-10 standard method, detached house): lot coverage 90%; principal front 20'; accessory setbacks front 10' behind front building line, side street 15', side 4', rear 4'; accessory height 25'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60219"
+
+  # ---------- Commercial/Residential (CRN, CRT, CR) and Employment (GR, NR, EOF) ----------
+  # Detached ADU is a limited use in all of these after Ord. 20-36; the pipeline still
+  # requires an SDAT single-family-detached house on the lot. Values are the
+  # detached-house column of the standard method table:
+  #   CR family:  Ch. 59 §4.5.3.C  https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068
+  #   GR/NR, EOF: Ch. 59 §4.6.3.C / §4.6.3 EOF table  https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3153
+  # coverage 90%; principal front 5'; accessory front 5' behind front building line,
+  # side street 15', side 4', rear 4'; accessory height 25'.
+  # Unconfirmed: whether an overlay zone (e.g. Bethesda Overlay, Ch. 59 Div. 4.9) changes these.
+  CRN-0.5:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRN). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRN-0.75: {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRN). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRN-1.0:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRN). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-0.25: {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-0.5:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-0.75: {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-1.0:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-1.25: {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-1.5:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-1.75: {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-2.0:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-2.25: {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-2.5:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-3.0:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CRT-4.75: {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CRT). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-0.5:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-1.0:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-1.5:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-1.75:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-2.0:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-2.25:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-2.5:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-2.75:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-3.0:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-3.5:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-4.0:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-5.0:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-5.25:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-6.25:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  CR-8.0:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.5.3.C detached house column; Ord. 20-36 use table (CR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3068"}
+  GR-1.5:   {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.6.3.C (GR/NR standard method) detached house column; Ord. 20-36 use table (GR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3153"}
+  NR-0.75:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.6.3.C (GR/NR standard method) detached house column; Ord. 20-36 use table (NR). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3153"}
+  EOF-0.5:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.6.3 EOF standard method table (Table 4.6.3E) detached house column; Ord. 20-36 use table (EOF). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3153"}
+  EOF-1.0:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.6.3 EOF standard method table (Table 4.6.3E) detached house column; Ord. 20-36 use table (EOF). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3153"}
+  EOF-1.25: {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.6.3 EOF standard method table (Table 4.6.3E) detached house column; Ord. 20-36 use table (EOF). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3153"}
+  EOF-1.5:  {adu_eligible: true, setbacks_ft: {front: 5, side: 4, side_street: 15, rear: 4}, height_ft: 25, coverage_cap: 0.90, behind_front_line: true, front_building_line_offset_ft: 5, behind_rear_building_line: false, confidence: unconfirmed, citation: "Ch. 59 §4.6.3 EOF standard method table (Table 4.6.3E) detached house column; Ord. 20-36 use table (EOF). https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-3153"}
+
+  # ---------- Not modeled / not eligible ----------
+  IM-1.5:
+    adu_eligible: false
+    citation: "Industrial (IM): Ord. 20-36 §1 use table leaves IL/IM/IH blank for Attached and Detached ADU; Planning staff report: SFD allowed in all zones except Industrial. https://assets.montgomerycountymd.gov/files/2026-09/Ordinance%2020-36%20%28ZTA%2026-06%29.pdf"
+  IM-2.5:
+    adu_eligible: false
+    citation: "Industrial (IM): Ord. 20-36 §1 use table leaves IL/IM/IH blank for Attached and Detached ADU. https://assets.montgomerycountymd.gov/files/2026-09/Ordinance%2020-36%20%28ZTA%2026-06%29.pdf"
+  RT-8.0:
+    adu_eligible: false
+    confidence: unconfirmed
+    citation: "Retained RT zone: Ch. 59 §8.2.3 use table for RT/R-H lists no Accessory Dwelling Unit, and Ord. 20-36 amended only the §3.1.6 use table. Possible conflict with state law (HB 1466) - see notes. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-6173"
+  RT-10.0:
+    adu_eligible: false
+    confidence: unconfirmed
+    citation: "Retained RT zone: Ch. 59 §8.2.3 use table lists no Accessory Dwelling Unit; not amended by Ord. 20-36. See notes. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-6173"
+  RT-12.5:
+    adu_eligible: false
+    confidence: unconfirmed
+    citation: "Retained RT zone: Ch. 59 §8.2.3 use table lists no Accessory Dwelling Unit; not amended by Ord. 20-36. See notes. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-6173"
+  R-H:
+    adu_eligible: false
+    confidence: unconfirmed
+    citation: "Retained R-H (high-rise multi-unit) zone: Ch. 59 §8.2.3 use table lists no Accessory Dwelling Unit; not amended by Ord. 20-36. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-6173"
+  CRF-1.5:
+    adu_eligible: false
+    confidence: unconfirmed
+    citation: "Floating zone (CRF, Ch. 59 Art. 59-5): development standards are fixed by the approved floating-zone plan, not a standard table; not modeled. See notes."
+  CRTF-1.25:
+    adu_eligible: false
+    confidence: unconfirmed
+    citation: "Floating zone (CRTF, Ch. 59 Art. 59-5): standards fixed by the approved floating-zone plan; not modeled. See notes."
+  EOFF-0.5:
+    adu_eligible: false
+    confidence: unconfirmed
+    citation: "Floating zone (EOFF, Ch. 59 Art. 59-5): standards fixed by the approved floating-zone plan; not modeled. See notes."
+
 adu_size_cap_ratio: 0.75
-adu_size_cap_citation: "PLACEHOLDER"
+adu_size_cap_citation: "Ch. 59 §3.3.3.A.1 as amended by Ord. 20-36 (ZTA 26-06, adopted 2026-09-15, effective 2026-10-05): an ADU is 'not greater than 75% of the size of' the primary single-family detached dwelling; the old detached cap (least of 50% of house footprint, 10% of lot, 1,200 sf) was repealed. Implements Md. HB 1466 (2025, Ch. 197). https://assets.montgomerycountymd.gov/files/2026-09/Ordinance%2020-36%20%28ZTA%2026-06%29.pdf"
 sfd_codes:
-  land_use: []
-  structure: []
-  citation: "PLACEHOLDER"
+  # MD iMap / SDAT Parcel Points: LU (land use) and STRUBLDG (building type).
+  land_use: ["R"]          # Residential
+  structure: ["0001", "0004", "0005"]   # DWEL Standard Unit, Split Foyer, Split Level
+  citation: "SDAT codes as decoded by MD iMap Parcel Points fields DESCLU/DESCBLDG (LU 'R' = Residential; STRUBLDG 0001 Standard Unit, 0004 Split Foyer, 0005 Split Level; 0002/0003 are townhouse end/center units, 0007-0009 condos, 0006 mobile home). Cross-checked 2026-11-08: in the county property layer every parcel with county land use 111 'Single Family Detached' in the study envelope has dwelling type x001/x004/x005, and no townhouse code. https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0"
 corner_lot_front: "shorter"
-corner_lot_citation: "PLACEHOLDER"
+corner_lot_citation: "Ch. 59 §1.4.2 'Lot Line, Front': 'On a corner lot, the owner must elect which lot line is the front lot line.' The code fixes no rule, so 'shorter' is a screening heuristic (most houses face the shorter frontage). Unconfirmed; see notes. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60"
