@@ -2,7 +2,9 @@
 
 Lots sit at (X0, Y0) with the front on the south side (y = 0) unless noted.
 """
-from shapely.geometry import LineString, Point
+import math
+
+from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
 from adu.fit_edges import Edge
@@ -37,9 +39,14 @@ def min_y(geom):
 
 def test_envelope_rectangle():
     lot = rect(0, 0, 60, 100)
-    env = setback_envelope(lot, rect_edges(60, 100), {"front": 25, "side": 5, "rear": 5, "side_street": 15})
-    assert abs(env.area - 50 * 70) <= 1
-    assert abs(min_y(env) - 25) < 0.01
+    edges = rect_edges(60, 100)
+    sb = {"front": 25, "side": 5, "rear": 5, "side_street": 15}
+    env = setback_envelope(lot, edges, sb)
+    # Round buffers are slightly circumscribed (conservative), so the 50x70 box loses a hair
+    assert 3500 * 0.995 <= env.area <= 3500 + 1e-6
+    for e in edges:
+        assert env.distance(e.geom) >= sb[e.kind] - 1e-6
+    assert 25 - 1e-6 <= min_y(env) < 25.1  # round-cap buffers are circumscribed, so >= the true setback
 
 
 def test_envelope_missing_kind_raises():
@@ -137,7 +144,7 @@ def test_through_lot_rear_rule_from_nearest_front():
     assert pieces
     u = pocket_union(pieces)
     assert min_y(u) >= 65 - 0.01
-    assert u.bounds[3] - Y0 <= 175 + 0.01 and u.bounds[3] - Y0 > 174  # far front setback only
+    assert 174 < u.bounds[3] - Y0 <= 175 + 1e-6  # far front setback only
     # house nearer the north front: the roles swap
     w = exclusion_widths(edges, rect(15, 135, 30, 40), r)
     assert abs(w[2] - 65) < 0.01 and w[0] == 0
@@ -174,3 +181,44 @@ def test_no_flags_removes_nothing():
     env = setback_envelope(lot, edges, rule()["setbacks_ft"])
     out = front_yard_exclusion(env, edges, house, rule(behind_front_line=False))
     assert abs(out.area - env.area) < 1e-6
+
+
+def P(x, y):
+    return (X0 + x, Y0 + y)
+
+
+def test_curved_frontage_one_W():
+    """Pie lot whose front is a 200-degree cul-de-sac arc split into 5 edges."""
+    cx, cy, rad = 80.0, 7.0, 40.0  # circle crosses y=0 at -10 and 190 degrees
+    angs = [-10 + 40 * k for k in range(6)]
+    arc = [(cx + rad * math.cos(math.radians(a)), cy + rad * math.sin(math.radians(a))) for a in angs]
+    ring = [(0, 0)] + list(reversed(arc)) + [(160, 0), (160, 160), (0, 160)]
+    lot = Polygon([P(*q) for q in ring])
+    assert lot.is_valid
+    fronts = [Edge(LineString([P(*arc[k + 1]), P(*arc[k])]), "front") for k in range(5)]
+    others = [Edge(LineString([P(0, 0), P(*arc[-1])]), "side"), Edge(LineString([P(*arc[0]), P(160, 0)]), "side"),
+              Edge(LineString([P(160, 0), P(160, 160)]), "side"), Edge(LineString([P(160, 160), P(0, 160)]), "rear"),
+              Edge(LineString([P(0, 160), P(0, 0)]), "side")]
+    house = rect(60, 100, 40, 30)
+    for order in (fronts + others, others + fronts[::-1], [fronts[2], others[0], fronts[0], fronts[4], fronts[1],
+                                                           *others[1:], fronts[3]]):
+        for flag in (True, False):
+            r = rule(behind_rear_building_line=flag)
+            w = [v for e, v in zip(order, exclusion_widths(order, house, r)) if e.kind == "front"]
+            assert len(w) == 5 and w[0] > 0 and all(abs(v - w[0]) < 1e-9 for v in w), (flag, w)
+
+
+def test_widening_trapezoid_no_leak():
+    lot = Polygon([P(30, 0), P(70, 0), P(100, 120), P(0, 120)])  # front 40 ft, rear 100 ft
+    edges = [Edge(LineString([P(30, 0), P(70, 0)]), "front"), Edge(LineString([P(70, 0), P(100, 120)]), "side"),
+             Edge(LineString([P(100, 120), P(0, 120)]), "rear"), Edge(LineString([P(0, 120), P(30, 0)]), "side")]
+    house = rect(35, 20, 30, 40)  # rear wall 60 ft back from the front
+    r = rule(front=25, side=5, rear=5, behind_rear_building_line=True)
+    front = edges[0].geom
+    w = exclusion_widths(edges, house, r)[0]
+    assert abs(w - 60) < 1e-6
+    env = setback_envelope(lot, edges, r["setbacks_ft"])
+    assert not env.is_empty and env.distance(front) >= 25 - 1e-6
+    pieces = build_pocket(lot, edges, house, [], r, RUN)
+    assert pieces
+    assert pocket_union(pieces).distance(front) >= w - 1e-6
