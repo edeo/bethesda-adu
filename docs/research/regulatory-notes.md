@@ -211,3 +211,8 @@ Suggested alternative, for the user to decide: `[-77.110, 38.960, -77.098, 38.96
 6. **Corner-lot front = shorter.** A heuristic. The code lets the owner elect.
 7. **Footprint currency.** 432 of 588 pilot footprints carry BLDG_DATE 2003, and small sheds are largely absent. Teardown rebuilds may be stale. Check this during pilot verification.
 8. **"Size" in the 75% cap** is not defined in the ordinance. The pipeline uses SDAT `SQFTSTRC` (structure square footage) as the house size.
+
+## User decisions (2026-11-08)
+
+- **1-story ADUs only.** R-60, R-90 and R-40 are modeled at a 15 ft accessory height with 5 ft side and rear setbacks. `run.yaml` `max_stories: 1` limits floor area to one story in every zone.
+- **Pilot box moved west** to `[-77.110, 38.960, -77.098, 38.968]`, so most pilot parcels are unincorporated rather than in Somerset.

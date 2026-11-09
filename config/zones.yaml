@@ -69,32 +69,32 @@ zones:
     citation: "Ch. 59 §4.4.7.B (R-200 standard method, detached house): lot coverage 25%; accessory setbacks front 65', side street 40'/15', side 12', rear 7' (12' corner); spec. a behind rear building line; accessory height 35'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60199"
   R-90:
     adu_eligible: true
-    setbacks_ft: {front: 60, side: 15, side_street: 30, rear: 15}
-    height_ft: 20
+    setbacks_ft: {front: 60, side: 5, side_street: 30, rear: 5}
+    height_ft: 15  # 1-story ADU (user choice 2026-11-08); code allows 20 with +2' side/rear per ft over 15
     coverage_cap: 0.30
     behind_front_line: true
     behind_rear_building_line: true
     confidence: confirmed
-    citation: "Ch. 59 §4.4.8.B (R-90 standard method, detached house): lot coverage 30%; accessory setbacks front 60', side street 30'/15', side 5', rear 5' (10' corner); spec. a behind rear building line; spec. b +2' side/rear per ft of height over 15' (20' ADU -> 15'); accessory height 20'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60200"
+    citation: "Ch. 59 §4.4.8.B (R-90 standard method, detached house): lot coverage 30%; accessory setbacks front 60', side street 30'/15', side 5', rear 5' (10' corner); spec. a behind rear building line; spec. b +2' side/rear per ft of height over 15' (modeled as 1-story ADU <=15' -> 5'/5'); accessory height 20'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60200"
   R-60:
     adu_eligible: true
-    setbacks_ft: {front: 60, side: 15, side_street: 25, rear: 15}
-    height_ft: 20
+    setbacks_ft: {front: 60, side: 5, side_street: 25, rear: 5}
+    height_ft: 15  # 1-story ADU (user choice 2026-11-08); code allows 20 with +2' side/rear per ft over 15
     coverage_cap: 0.35
     behind_front_line: true
     behind_rear_building_line: true
     confidence: confirmed
-    citation: "Ch. 59 §4.4.9.B (R-60 standard method, detached house): lot coverage 35%; accessory setbacks front 60', side street 25'/15', side 5', rear 5' (10' corner); spec. a behind rear building line; spec. b +2' side/rear per ft of height over 15' (20' ADU -> 15'); accessory height 20'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60201"
+    citation: "Ch. 59 §4.4.9.B (R-60 standard method, detached house): lot coverage 35%; accessory setbacks front 60', side street 25'/15', side 5', rear 5' (10' corner); spec. a behind rear building line; spec. b +2' side/rear per ft of height over 15' (modeled as 1-story ADU <=15' -> 5'/5'); accessory height 20'. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60201"
   R-40:
     # Not mapped in the study area on 2026-11-08; kept so a rezoning is not silently dropped.
     adu_eligible: true
-    setbacks_ft: {front: 60, side: 15, side_street: 25, rear: 15}
-    height_ft: 20
+    setbacks_ft: {front: 60, side: 5, side_street: 25, rear: 5}
+    height_ft: 15  # 1-story ADU (user choice 2026-11-08); code allows 20 with +2' side/rear per ft over 15
     coverage_cap: 0.35
     behind_front_line: true
     behind_rear_building_line: true
     confidence: confirmed
-    citation: "Ch. 59 §4.4.10.B (R-40 standard method, detached house column): lot coverage 35%; accessory setbacks front 60', side street 25'/15', side 5', rear 5' (10' corner); spec. a behind rear building line; spec. b +2' side/rear per ft over 15'; accessory height 20'. Detached ADU added to R-40 by Ord. 20-36. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60207"
+    citation: "Ch. 59 §4.4.10.B (R-40 standard method, detached house column): lot coverage 35%; accessory setbacks front 60', side street 25'/15', side 5', rear 5' (10' corner); spec. a behind rear building line; spec. b +2' side/rear per ft over 15' (modeled as 1-story ADU <=15' -> 5'/5'); accessory height 20'. Detached ADU added to R-40 by Ord. 20-36. https://codelibrary.amlegal.com/codes/montgomerycounty/latest/montgomeryco_md_zone2014/0-0-0-60207"
 
   # ---------- Residential Townhouse / Multi-Unit zones (detached-house column) ----------
   TLD:
