@@ -1,7 +1,7 @@
 [project]
 name = "adu"
 version = "0.1.0"
-description = "Add your description here"
+description = "Screen Bethesda, MD parcels for where a detached ADU fits."
 readme = "README.md"
 authors = [
     { name = "Edward OBrien" }
@@ -16,9 +16,6 @@ dependencies = [
     "requests>=2.34.2",
     "shapely>=2.2.0",
 ]
-
-[project.scripts]
-adu = "adu:main"
 
 [build-system]
 requires = ["uv_build>=0.9.26,<0.10.0"]
