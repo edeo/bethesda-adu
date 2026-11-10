@@ -144,3 +144,33 @@ def test_merge_flags():
     assert merge_flags("", "odd_shape") == "odd_shape"
     assert merge_flags("split_zoned", "odd_shape", "split_zoned") == "odd_shape;split_zoned"
     assert merge_flags("") == ""
+
+
+def _zones_with(code, **rule):
+    zones = {**ZONES, "zones": {**ZONES["zones"], code: {**ZONES["zones"][ELIGIBLE], **rule}}}
+    return zones
+
+
+def _run_zone(rule_over, **over):
+    zones = _zones_with("MIXED-X", **rule_over)
+    p = gpd.GeoDataFrame([parcel(zone="MIXED-X", **over)], geometry="geometry", crs="EPSG:2248")
+    f = gpd.GeoDataFrame(pd.DataFrame([fp()], columns=list(fp())), geometry="geometry", crs="EPSG:2248")
+    r = classify(p, f, zones, RUN).set_index("parcel_id").loc["1"]
+    return r["status"], r["reason"], r["flags"]
+
+
+def test_mixed_use_missing_sdat_is_not_sfd():
+    status, reason, _ = _run_zone({"missing_sdat_not_sfd": True},
+                                  land_use=None, structure=None, living_area_sqft=None)
+    assert (status, reason) == ("ineligible", "not_sfd")
+
+
+def test_residential_missing_sdat_still_uncertain():
+    status, reason, flags = _run_zone({}, land_use=None, structure=None, living_area_sqft=None)
+    assert (status, reason) == ("uncertain", None)
+    assert "missing_living_area" in flags
+
+
+def test_mixed_use_with_sfd_codes_proceeds():
+    status, reason, _ = _run_zone({"missing_sdat_not_sfd": True})
+    assert status != "ineligible" and reason is None

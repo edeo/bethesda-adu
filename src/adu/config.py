@@ -38,6 +38,9 @@ def load_zones(path: Path = Path("config/zones.yaml")) -> dict:
         if "citation" not in zone:
             raise ConfigError(f"zone {code}: missing field citation")
         _check_citation(f"zone {code}", zone["citation"])
+        flag = zone.get("missing_sdat_not_sfd", False)
+        if not isinstance(flag, bool):
+            raise ConfigError(f"zone {code}: missing_sdat_not_sfd must be a bool")
         if not zone.get("adu_eligible"):
             continue
         for field in ELIGIBLE_FIELDS:

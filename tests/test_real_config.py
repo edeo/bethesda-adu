@@ -45,3 +45,9 @@ def test_load_sources_missing_source_raises(tmp_path):
     p.write_text(yaml.safe_dump(data))
     with pytest.raises(ConfigError, match=r"imagery"):
         load_sources(p)
+
+
+def test_real_mixed_use_zone_flags_missing_sdat_not_sfd():
+    zones = load_zones(CONFIG / "zones.yaml")["zones"]
+    assert zones["CRT-2.0"]["missing_sdat_not_sfd"] is True
+    assert not zones["R-60"].get("missing_sdat_not_sfd")

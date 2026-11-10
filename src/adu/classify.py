@@ -16,11 +16,11 @@ def merge_flags(existing: str, *new: str) -> str:
     return ";".join(sorted(parts))
 
 
-def _not_sfd(row, n_big: int, sfd: dict) -> bool:
+def _not_sfd(row, n_big: int, sfd: dict, zone_rule: dict) -> bool:
     lu, st = row["land_use"], row["structure"]
     has_lu, has_st = pd.notna(lu), pd.notna(st)
     if not has_lu and not has_st:
-        return n_big > 1
+        return n_big > 1 or bool(zone_rule.get("missing_sdat_not_sfd", False))
     if has_lu and lu not in sfd["land_use"]:
         return True
     return bool(has_st and st not in sfd["structure"])
@@ -45,7 +45,7 @@ def classify(parcels: gpd.GeoDataFrame, footprints: gpd.GeoDataFrame, zones: dic
     for _, row in parcels.iterrows():
         pid = row["parcel_id"]
         reason = None
-        if _not_sfd(row, int(big_count.get(pid, 0)), sfd):
+        if _not_sfd(row, int(big_count.get(pid, 0)), sfd, zone_cfg.get(row["zone"], {})):
             reason = "not_sfd"
         elif not zone_cfg.get(row["zone"], {}).get("adu_eligible", False):
             reason = "zone_ineligible"
