@@ -149,3 +149,17 @@ def test_full_uses_zcta_bounds_as_bbox(monkeypatch, tmp_path):
     assert counts == {"zcta": 1, "parcels": 1}
     assert sess.calls[0][1]["where"] == "ZCTA5 IN ('20814')"
     assert sess.calls[1][1]["geometry"] == "-77.2,38.9,-77.0,39.1"
+
+
+def test_paging_continues_when_server_caps_below_page_size(tmp_path):
+    pages = []
+    for n, flag in ((1000, True), (1000, True), (300, False)):
+        p = _page(n)
+        p["exceededTransferLimit"] = flag
+        pages.append(p)
+    sess = FakeSession(pages)
+    out = tmp_path / "a.geojson"
+    n = fetch_arcgis("http://h/0", BBOX, out, page_size=2000, session=sess,
+                     manifest_path=tmp_path / "m.json")
+    assert n == 2300
+    assert [c[1]["resultOffset"] for c in sess.calls] == [0, 1000, 2000]

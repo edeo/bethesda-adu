@@ -25,12 +25,14 @@ def _append_manifest(path: Path, entry: dict) -> None:
 
 
 def _more_pages(payload: dict, n: int, page_size: int) -> bool:
-    if n < page_size:
+    if n == 0:
         return False
     flag = payload.get("exceededTransferLimit")
     if flag is None:
         flag = (payload.get("properties") or {}).get("exceededTransferLimit")
-    return flag is not False
+    if flag is None:  # server gave no hint: a short page means the last page
+        return n >= page_size
+    return bool(flag)
 
 
 def fetch_arcgis(
@@ -79,7 +81,7 @@ def fetch_arcgis(
         features.extend(page)
         if not _more_pages(payload, len(page), page_size):
             break
-        offset += page_size
+        offset += len(page)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps({"type": "FeatureCollection", "features": features}))
     _append_manifest(
