@@ -222,3 +222,13 @@ def test_widening_trapezoid_no_leak():
     pieces = build_pocket(lot, edges, house, [], r, RUN)
     assert pieces
     assert pocket_union(pieces).distance(front) >= w - 1e-6
+
+
+def test_multipolygon_house_rear_wall_rule():
+    # A principal footprint with a detached part (MultiPolygon) must not crash.
+    edges = rect_edges(60, 120)
+    house = unary_union([rect(15, 30, 30, 30), rect(15, 70, 10, 10)])
+    assert house.geom_type == "MultiPolygon"
+    r = rule(front=25, side=5, rear=5, behind_rear_building_line=True)
+    w = exclusion_widths(edges, house, r)
+    assert abs(w[0] - 80) < 0.01  # rear wall of the farthest part

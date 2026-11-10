@@ -115,8 +115,9 @@ def _frontages(edges: list[Edge], house: Polygon) -> list[list[int]]:
     return [sorted(m) for _, m in groups]
 
 
-def _max_distance(line: BaseGeometry, house: Polygon) -> float:
-    return max(line.distance(Point(c)) for c in house.exterior.coords)
+def _max_distance(line: BaseGeometry, house: BaseGeometry) -> float:
+    # get_coordinates covers MultiPolygon houses (footprints with detached parts) too.
+    return max(line.distance(Point(c)) for c in shapely.get_coordinates(house))
 
 
 def exclusion_widths(edges: list[Edge], house: Polygon, zone_rule: dict) -> list[float]:
