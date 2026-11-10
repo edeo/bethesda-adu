@@ -149,7 +149,7 @@
       attribution: "MD iMap six-inch imagery" });
     var esri = L.tileLayer(data.imagery.fallback, { maxZoom: 21, maxNativeZoom: 19,
       attribution: "Esri World Imagery" });
-    mdi.addTo(map);
+    esri.addTo(map);
 
     var STYLES = {
       parcel:      { label: "parcel outline", style: { color: "#ffffff", weight: 2, fill: false } },
@@ -170,7 +170,7 @@
       groups[k] = L.layerGroup().addTo(map);
       overlays[STYLES[k].label] = groups[k];
     });
-    L.control.layers({ "MD iMap six-inch (2023)": mdi, "Esri World Imagery": esri }, overlays,
+    L.control.layers({ "Esri World Imagery": esri, "MD iMap six-inch (2023, misaligned)": mdi }, overlays,
       { collapsed: false }).addTo(map);
 
     function drawParcel(f) {
