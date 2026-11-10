@@ -50,6 +50,10 @@ def load_zones(path: Path = Path("config/zones.yaml")) -> dict:
         for key in SETBACKS:
             if key not in setbacks:
                 raise ConfigError(f"zone {code}: missing field setbacks_ft.{key}")
+        if "rear_corner" in setbacks:
+            rc = setbacks["rear_corner"]
+            if isinstance(rc, bool) or not isinstance(rc, (int, float)):
+                raise ConfigError(f"zone {code}: setbacks_ft.rear_corner must be a number")
     for keys in TOP_LEVEL_CITATIONS:
         node = data
         for k in keys:

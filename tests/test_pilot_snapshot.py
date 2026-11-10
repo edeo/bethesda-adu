@@ -1,28 +1,43 @@
 import json
 from pathlib import Path
 
+import geopandas as gpd
 import pandas as pd
 import pytest
 
+from adu.classify import classify
+from adu.config import load_run_config, load_zones
+from adu.fit import run_fit
+
 ROOT = Path(__file__).resolve().parent.parent
-PILOT = ROOT / "data" / "interim" / "pilot" / "parcels_fit.parquet"
+PILOT = ROOT / "data" / "interim" / "pilot"
+INPUTS = ("parcels_prepared.parquet", "footprints.parquet", "parcels_neighbors.parquet")
 SNAPSHOT = ROOT / "tests" / "snapshots" / "pilot_counts.json"
 
 
-def _pilot_counts(path):
-    df = pd.read_parquet(path, columns=["status", "reason"])
+def _counts(df):
     reason = df["reason"].where(df["reason"].notna(), "none").astype(str)
     keys = df["status"].astype(str) + "|" + reason
-    counts = keys.value_counts()
-    return {k: int(v) for k, v in sorted(counts.items())}
+    return {k: int(v) for k, v in sorted(keys.value_counts().items())}
 
 
-@pytest.mark.skipif(not PILOT.exists(), reason="pilot output not generated")
+def recompute_pilot_counts():
+    """Re-run classify and fit in memory from the prepared pilot inputs and the real configs."""
+    parcels = gpd.read_parquet(PILOT / "parcels_prepared.parquet")
+    footprints = gpd.read_parquet(PILOT / "footprints.parquet")
+    neighbors = gpd.read_parquet(PILOT / "parcels_neighbors.parquet")
+    zones, run = load_zones(ROOT / "config" / "zones.yaml"), load_run_config(ROOT / "config" / "run.yaml")
+    classified = classify(parcels, footprints, zones, run)
+    out, _ = run_fit(classified, footprints, zones, run, neighbors=neighbors)
+    return _counts(pd.DataFrame(out))
+
+
+@pytest.mark.skipif(not all((PILOT / f).exists() for f in INPUTS), reason="pilot prepared files not generated")
 def test_pilot_counts_match_snapshot():
     expected = json.loads(SNAPSHOT.read_text())
-    actual = _pilot_counts(PILOT)
+    actual = recompute_pilot_counts()
     assert actual == expected, (
-        "pilot status/reason counts differ from tests/snapshots/pilot_counts.json. "
+        "recomputed pilot status/reason counts differ from tests/snapshots/pilot_counts.json. "
         "Regenerate the snapshot only when pilot results change on purpose. "
         f"actual={actual}"
     )

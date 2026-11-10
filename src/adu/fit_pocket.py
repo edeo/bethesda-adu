@@ -31,7 +31,15 @@ def _strip(line: BaseGeometry, width: float) -> BaseGeometry:
 
 
 def setback_envelope(parcel: Polygon, edges: list[Edge], setbacks_ft: dict[str, float]) -> BaseGeometry:
-    """Parcel minus every point within its kind's setback of each edge (KeyError if absent)."""
+    """Parcel minus every point within its kind's setback of each edge (KeyError if absent).
+
+    Corner lots (any `side_street` edge) use `rear_corner` for rear edges when the zone has it.
+    Deliberately applied to ALL corner lots (conservative): the code applies it only where the
+    abutting lot fronts on the side street.
+    """
+    setbacks_ft = dict(setbacks_ft)
+    if "rear_corner" in setbacks_ft and any(e.kind == "side_street" for e in edges):
+        setbacks_ft["rear"] = setbacks_ft["rear_corner"]
     strips = [_strip(e.geom, setbacks_ft[e.kind]) for e in edges if setbacks_ft[e.kind] > 0]
     if not strips:
         return parcel

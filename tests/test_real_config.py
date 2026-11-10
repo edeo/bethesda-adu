@@ -51,3 +51,12 @@ def test_real_mixed_use_zone_flags_missing_sdat_not_sfd():
     zones = load_zones(CONFIG / "zones.yaml")["zones"]
     assert zones["CRT-2.0"]["missing_sdat_not_sfd"] is True
     assert not zones["R-60"].get("missing_sdat_not_sfd")
+
+
+def test_real_corner_rear_setbacks():
+    z = load_zones(CONFIG / "zones.yaml")["zones"]
+    for code in ("R-60", "R-90", "R-40"):
+        assert z[code]["setbacks_ft"]["rear_corner"] == 10
+    for code in ("R-200", "RE-1", "RE-2", "RE-2C"):
+        assert z[code]["setbacks_ft"]["rear_corner"] == 12
+    assert "corner" in z["R-60"]["citation"] and "rear_corner" in z["R-60"]["citation"]

@@ -232,3 +232,19 @@ def test_multipolygon_house_rear_wall_rule():
     r = rule(front=25, side=5, rear=5, behind_rear_building_line=True)
     w = exclusion_widths(edges, house, r)
     assert abs(w[0] - 80) < 0.01  # rear wall of the farthest part
+
+
+def test_corner_lot_uses_rear_corner():
+    lot = rect(0, 0, 60, 100)
+    sb = {"front": 25, "side": 5, "rear": 5, "side_street": 15, "rear_corner": 10}
+    env = setback_envelope(lot, rect_edges(60, 100, east="side_street"), sb)
+    rear = LineString([(X0, Y0 + 100), (X0 + 60, Y0 + 100)])
+    assert env.distance(rear) >= 10 - 1e-6
+
+
+def test_interior_lot_ignores_rear_corner():
+    lot = rect(0, 0, 60, 100)
+    sb = {"front": 25, "side": 5, "rear": 5, "side_street": 15, "rear_corner": 10}
+    env = setback_envelope(lot, rect_edges(60, 100), sb)
+    rear = LineString([(X0, Y0 + 100), (X0 + 60, Y0 + 100)])
+    assert 5 - 1e-6 <= env.distance(rear) < 5.1

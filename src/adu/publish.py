@@ -63,6 +63,9 @@ def build_summary(df: pd.DataFrame, run: dict) -> str:
     n = int((df["status"] == "fits").sum())
     flagged = int((df["status"] == "flagged_town").sum())
     unc = int((df["status"] == "uncertain").sum())
+    fit_geom = df["fit_result"] == "fits" if "fit_result" in df else pd.Series(False, index=df.index)
+    flagged_fit = int(((df["status"] == "flagged_town") & fit_geom).sum())
+    unc_fit = int(((df["status"] == "uncertain") & fit_geom).sum())
     by_zcta = pd.crosstab(df["zcta"].fillna("none"), df["status"])
     by_zone = pd.crosstab(df["zone"].fillna("none"), df["status"])
     assumptions = "\n".join(f"| {k} | {v} |" for k, v in run.items()
@@ -78,9 +81,8 @@ def build_summary(df: pd.DataFrame, run: dict) -> str:
 Of {len(df)} parcels in ZCTAs {", ".join(run.get("zctas", []))}, {n} have status `fits`.
 This count does not include the lots below, which are reported separately:
 
-- flagged_town: {flagged} lots (would fit by the county rules, but lie inside an incorporated
-  town whose own zoning rules may differ)
-- uncertain: {unc} lots (the geometry or data was too ambiguous to call)
+- flagged_town: {flagged} lots (in an incorporated town (town rules may apply); {flagged_fit} fit geometrically)
+- uncertain: {unc} ({unc_fit} fit geometrically); the geometry or data was too ambiguous to call
 
 ## Method
 
@@ -96,7 +98,14 @@ ADU size cap.
 
 - ADUs are modelled as 1-story only (`max_stories: 1`).
 - In RE and R zones an ADU must sit behind the rear wall of the house; the screen enforces this.
-- Through lots get the front setback on both street frontages.
+- Lots with street frontage on both front and back get the front setback from both street frontages.
+  Many of these probably back onto alleys, so those lots may be undercounted.
+- The corner-lot rear setback is applied to all corner lots (conservative; the code applies it
+  only where the abutting lot fronts the side street).
+- The R-60/R-90 rule adding +1 ft of setback per foot of ADU length beyond 24 ft along a lot line
+  is not modelled. It does not change which lots fit, but it overstates `usable_footprint_sqft`,
+  `max_adu_floor_area` and the CSV ranking for large ADUs.
+- `corner_lot_front: shorter` is a heuristic.
 - Building footprints may predate recent construction, so a few lots may differ on the ground.
 - Pilot verification against aerial imagery passed at 40/40 on 2026-11-09.
 - Not modelled: tree canopy, slope, easements, floodplain or stream buffers, HOA covenants,

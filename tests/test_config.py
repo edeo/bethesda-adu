@@ -61,3 +61,12 @@ def test_placeholder_citation_raises(tmp_path):
 def test_ineligible_zone_needs_no_rules(tmp_path):
     z = {"adu_eligible": False, "citation": "Sec. 1"}
     assert load_zones(write_zones(tmp_path, z))["zones"]["Z-1"]["adu_eligible"] is False
+
+
+def test_rear_corner_optional_number(tmp_path):
+    z = good_zone()
+    z["setbacks_ft"]["rear_corner"] = 10
+    assert load_zones(write_zones(tmp_path, z))
+    z["setbacks_ft"]["rear_corner"] = "ten"
+    with pytest.raises(ConfigError, match=r"Z-1.*rear_corner"):
+        load_zones(write_zones(tmp_path, z))

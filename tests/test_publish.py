@@ -100,3 +100,34 @@ def test_map_embeds_data_and_is_standalone(outputs):
     assert len(data["features"]) == len(ROWS)
     props = data["features"][0]["properties"]
     assert "status" in props
+
+
+def _summary_df(fit_results):
+    import pandas as pd
+    return pd.DataFrame({
+        "status": ["uncertain"] * len(fit_results) + ["flagged_town"] * 2 + ["fits"],
+        "fit_result": list(fit_results) + ["fits", "no_fit", "fits"],
+        "zcta": "20814", "zone": "R-60"})
+
+
+def test_limits_lines_present(outputs):
+    text = outputs["summary.md"].read_text()
+    assert "corner-lot rear setback is applied to all corner lots" in text
+    assert "only where the abutting lot fronts the side street" in text
+    assert "+1 ft of setback per foot of ADU length beyond 24 ft" in text
+    assert "usable_footprint_sqft" in text and "max_adu_floor_area" in text
+    assert "front setback from both" in text and "undercounted" in text
+    assert "`corner_lot_front: shorter` is a heuristic" in text
+
+
+def test_uncertain_line_shows_geometric_fits():
+    from adu.publish import build_summary
+    text = build_summary(_summary_df(["fits", "fits", "no_fit", None]), {"zctas": ["20814"]})
+    assert "uncertain: 4 (2 fit geometrically)" in text
+
+
+def test_flagged_town_wording():
+    from adu.publish import build_summary
+    text = build_summary(_summary_df(["fits"]), {"zctas": ["20814"]})
+    assert "flagged_town: 2 lots (in an incorporated town (town rules may apply); 1 fit geometrically)" in text
+    assert "would fit" not in text

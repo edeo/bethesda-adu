@@ -4,9 +4,9 @@
   "ineligible|not_sfd": 242,
   "ineligible|zone_ineligible": 23,
   "no_fit|coverage_exhausted": 1,
-  "no_fit|no_pocket": 19,
-  "no_fit|pocket_too_small": 66,
-  "uncertain|no_pocket": 7,
+  "no_fit|no_pocket": 20,
+  "no_fit|pocket_too_small": 65,
+  "uncertain|no_pocket": 9,
   "uncertain|none": 9,
-  "uncertain|pocket_too_small": 6
+  "uncertain|pocket_too_small": 4
 }
