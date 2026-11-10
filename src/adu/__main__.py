@@ -65,6 +65,8 @@ def main(argv: list[str] | None = None) -> None:
     run.add_argument("--force-fetch", action="store_true", help="re-download raw data")
     viewer = sub.add_parser("viewer", help="build the aerial verification viewer")
     viewer.add_argument("--area", choices=("pilot", "full"), default="pilot")
+    pub = sub.add_parser("publish", help="write out/adu_map.html, adu_candidates.csv, summary.md")
+    pub.add_argument("--area", choices=("pilot", "full"), default="full")
     verify = sub.add_parser("verify", help="score a viewer verification export")
     verify.add_argument("csv_path", type=Path)
     args = parser.parse_args(argv)
@@ -77,6 +79,11 @@ def main(argv: list[str] | None = None) -> None:
         print(f"wrote {out}/index.html and {out}/sample.geojson")
         print("serve with: python -m http.server 8000")
         print("then open:  http://localhost:8000/viewer/")
+    elif args.command == "publish":
+        from adu.publish import publish
+
+        for path in publish(args.area):
+            print(f"wrote {path} ({path.stat().st_size / 1e6:.1f} MB)")
     elif args.command == "verify":
         from adu.verify import score_verification
 

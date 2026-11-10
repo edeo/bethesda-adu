@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bethesda detached ADU screening map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; font: 14px/1.4 system-ui, sans-serif; color: #1c1c1c; }
+  #map { height: 100%; }
+  .panel { background: rgba(255,255,255,0.95); padding: 10px 12px; border-radius: 6px;
+           box-shadow: 0 1px 6px rgba(0,0,0,.35); width: 260px; }
+  .panel h1 { font-size: 14px; margin: 0 0 6px; }
+  .panel label { display: block; margin-top: 6px; font-weight: 600; font-size: 12px; }
+  .panel select, .panel input[type=range] { width: 100%; }
+  .sw { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border: 1px solid #555; vertical-align: -1px; }
+  .row { display: flex; justify-content: space-between; font-size: 12px; }
+  .note { font-size: 11px; color: #555; margin-top: 6px; }
+  table.pop td { padding: 1px 6px 1px 0; vertical-align: top; }
+  table.pop td:first-child { color: #666; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const PARCELS = __PARCELS__;
+(function () {
+  "use strict";
+  var STATUS = {
+    fits:         {label: "Fits",                  color: "#1b9e3e", fill: 0.55, w: 1},
+    flagged_town: {label: "Fits, in a town (check town rules)", color: "#e08a00", fill: 0.55, w: 1},
+    uncertain:    {label: "Uncertain",             color: "#d4c000", fill: 0.5,  w: 1},
+    no_fit:       {label: "No fit",                color: "#c0504d", fill: 0.25, w: 0.8},
+    ineligible:   {label: "Ineligible",            color: "#b5b5b5", fill: 0,    w: 0.4}
+  };
+  var ORDER = ["ineligible", "no_fit", "uncertain", "flagged_town", "fits"];
+  var feats = PARCELS.features.slice().sort(function (a, b) {
+    return ORDER.indexOf(a.properties.status) - ORDER.indexOf(b.properties.status);
+  });
+
+  var esri = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    {maxZoom: 19, attribution: "Esri World Imagery"});
+  var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {maxZoom: 19, attribution: "&copy; OpenStreetMap"});
+  var imap = L.tileLayer("https://mdimap.maryland.gov/arcgis/rest/services/Imagery/MD_AerialImagery/MapServer/tile/{z}/{y}/{x}",
+    {maxZoom: 19, attribution: "MD iMap"});
+  var map = L.map("map", {preferCanvas: true, layers: [esri]}).setView([38.985, -77.10], 13);
+  L.control.layers({"Esri World Imagery": esri, "OpenStreetMap": osm, "MD iMap (misaligned)": imap}).addTo(map);
+
+  function uniq(key) {
+    var s = {};
+    feats.forEach(function (f) { if (f.properties[key]) { s[f.properties[key]] = 1; } });
+    return Object.keys(s).sort();
+  }
+  var maxAdu = 0;
+  feats.forEach(function (f) { maxAdu = Math.max(maxAdu, f.properties.max_adu_floor_area || 0); });
+  maxAdu = Math.ceil(maxAdu / 50) * 50;
+
+  var state = {zcta: "", zone: "", min: 0};
+  var layer = null, counts = {};
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  var FIELDS = [["address", "Address"], ["sdat_account", "SDAT account"], ["zcta", "ZIP (ZCTA)"],
+    ["zone", "Zone"], ["lot_sqft", "Lot sq ft"], ["house_living_sqft", "House living sq ft"],
+    ["house_footprint_sqft", "House footprint sq ft"], ["rect_w_ft", "ADU rect width ft"],
+    ["rect_l_ft", "ADU rect length ft"], ["usable_footprint_sqft", "Usable footprint sq ft"],
+    ["max_adu_floor_area", "Max ADU floor area sq ft"], ["status", "Status"], ["reason", "Reason"],
+    ["flags", "Flags"]];
+  function popup(p) {
+    var h = "<table class='pop'>";
+    FIELDS.forEach(function (f) {
+      if (p[f[0]] !== undefined && p[f[0]] !== "") { h += "<tr><td>" + f[1] + "</td><td>" + esc(p[f[0]]) + "</td></tr>"; }
+    });
+    return h + "</table>";
+  }
+  function keep(f) {
+    var p = f.properties;
+    if (state.zcta && p.zcta !== state.zcta) { return false; }
+    if (state.zone && p.zone !== state.zone) { return false; }
+    if (state.min > 0 && !(p.max_adu_floor_area >= state.min)) { return false; }
+    return true;
+  }
+  function rebuild() {
+    if (layer) { map.removeLayer(layer); }
+    counts = {};
+    layer = L.geoJSON({type: "FeatureCollection", features: feats}, {
+      filter: function (f) {
+        var ok = keep(f);
+        if (ok) { counts[f.properties.status] = (counts[f.properties.status] || 0) + 1; }
+        return ok;
+      },
+      style: function (f) {
+        var s = STATUS[f.properties.status] || STATUS.ineligible;
+        return {color: s.color, weight: s.w, fillColor: s.color, fillOpacity: s.fill,
+                opacity: s.fill ? 0.9 : 0.5};
+      },
+      onEachFeature: function (f, l) {
+        l.on("click", function (e) { L.popup().setLatLng(e.latlng).setContent(popup(f.properties)).openOn(map); });
+      }
+    }).addTo(map);
+    updateLegend();
+  }
+
+  var panel = L.control({position: "topright"});
+  panel.onAdd = function () {
+    var d = L.DomUtil.create("div", "panel");
+    var opts = function (a) { return "<option value=''>All</option>" + a.map(function (x) {
+      return "<option>" + esc(x) + "</option>"; }).join(""); };
+    d.innerHTML = "<h1>Detached ADU screening</h1>" +
+      "<div id='legend'></div>" +
+      "<label>ZIP<select id='f-zcta'>" + opts(uniq("zcta")) + "</select></label>" +
+      "<label>Zone<select id='f-zone'>" + opts(uniq("zone")) + "</select></label>" +
+      "<label>Minimum ADU size: <span id='f-min-v'>any</span><input id='f-min' type='range' min='0' max='" +
+      maxAdu + "' step='50' value='0'></label>" +
+      "<div class='note'>Screening estimate, not a permitting determination. Assumes 1-story ADUs.</div>";
+    L.DomEvent.disableClickPropagation(d);
+    L.DomEvent.disableScrollPropagation(d);
+    return d;
+  };
+  panel.addTo(map);
+
+  function updateLegend() {
+    document.getElementById("legend").innerHTML = ORDER.slice().reverse().map(function (k) {
+      var s = STATUS[k];
+      return "<div class='row'><span><span class='sw' style='background:" + (s.fill ? s.color : "#fff") +
+        ";border-color:" + s.color + "'></span>" + s.label + "</span><span>" + (counts[k] || 0) + "</span></div>";
+    }).join("");
+  }
+  document.getElementById("f-zcta").addEventListener("change", function (e) { state.zcta = e.target.value; rebuild(); });
+  document.getElementById("f-zone").addEventListener("change", function (e) { state.zone = e.target.value; rebuild(); });
+  document.getElementById("f-min").addEventListener("input", function (e) {
+    state.min = +e.target.value;
+    document.getElementById("f-min-v").textContent = state.min ? state.min + " sq ft" : "any";
+  });
+  document.getElementById("f-min").addEventListener("change", rebuild);
+
+  rebuild();
+  try { map.fitBounds(layer.getBounds()); } catch (e) {}
+})();
+</script>
+</body>
+</html>
