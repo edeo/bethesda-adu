@@ -59,6 +59,39 @@ def _md_table(ct: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
+SOURCE_LABELS = {
+    "parcels": "Parcel boundaries (Montgomery County)",
+    "zoning": "Zoning (Montgomery County)",
+    "footprints": "Building footprints (Montgomery County)",
+    "sdat": "Property records: land use, structure type, living area (Maryland SDAT via MD iMap)",
+    "zcta": "ZIP code areas (US Census TIGERweb, 2020 ZCTAs)",
+    "places": "Incorporated towns (US Census TIGERweb)",
+}
+
+
+def _sources_md() -> str:
+    """One line per downloaded layer, with its endpoint and the latest download date."""
+    from adu.config import load_sources
+
+    sources = load_sources()
+    dates: dict[str, str] = {}
+    manifest = Path("data/raw/manifest.json")
+    if manifest.exists():
+        for entry in json.loads(manifest.read_text()):
+            name = Path(entry.get("file", "")).stem
+            when = str(entry.get("downloaded_at", ""))[:10]
+            if name and when > dates.get(name, ""):
+                dates[name] = when
+    lines = []
+    for key, label in SOURCE_LABELS.items():
+        url = sources.get(key, {}).get("url", "")
+        got = f", downloaded {dates[key]}" if key in dates else ""
+        lines.append(f"- {label}: <{url}>{got}")
+    lines.append("- Zoning rules and citations: Montgomery County Zoning Ordinance (Chapter 59) as amended by "
+                 "ZTA 26-06 (Ordinance 20-36, effective 2026-10-05); see `config/zones.yaml` in the code repository.")
+    return "\n".join(lines)
+
+
 def build_summary(df: pd.DataFrame, run: dict) -> str:
     n = int((df["status"] == "fits").sum())
     flagged = int((df["status"] == "flagged_town").sum())
@@ -110,6 +143,10 @@ ADU size cap.
 - Pilot verification against aerial imagery passed at 40/40 on 2026-11-09.
 - Not modelled: tree canopy, slope, easements, floodplain or stream buffers, HOA covenants,
   utility capacity, existing or licensed ADUs, attached or interior ADUs, cost.
+
+## Data sources
+
+{_sources_md()}
 
 ## Counts by status and ZIP (ZCTA)
 
@@ -181,19 +218,22 @@ def publish(area: str, interim_dir: Path | None = None, out_dir: Path | None = N
     template = resources.files("adu").joinpath("templates/map.html").read_text()
     data = json.dumps(build_map_collection(df), separators=(",", ":")).replace("</", "<\\/")
     map_path = out / "adu_map.html"
-    map_path.write_text(template.replace("__PARCELS__", data))
+    links = "<a href='summary.md'>Methods and data</a>"
+    map_path.write_text(template.replace("__HEADER_LINKS__", links).replace("__PARCELS__", data))
     return [map_path, csv_path, summary_path]
 
 
 # Fields that identify a specific property; left out of the public website.
 PRIVATE_COLUMNS = ("address", "sdat_account")
 SITE_DIR = Path("docs")
-SUMMARY_LINK = "<a href='summary.html'>Method and limits</a>"
+SUMMARY_LINK = "<a href='summary.html'>Methods and data</a>"
+REPO_URL = "https://github.com/edeo/bethesda-adu"
+SITE_HEADER_LINKS = SUMMARY_LINK + f" <span aria-hidden='true'>&middot;</span> <a href='{REPO_URL}'>Code</a>"
 
 SUMMARY_PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bethesda ADU screening: method and limits</title>
+<title>Bethesda ADU screening: methods and data</title>
 <style>
 body {{ font: 16px/1.6 system-ui, sans-serif; max-width: 860px; margin: 0 auto; padding: 24px 16px; color: #1b1b1b; background: #fff; }}
 table {{ border-collapse: collapse; margin: 12px 0; display: block; overflow-x: auto; }}
@@ -217,10 +257,9 @@ def publish_site(area: str = "full", interim_dir: Path | None = None, site_dir: 
     columns = [c for c in POPUP_COLUMNS if c not in PRIVATE_COLUMNS]
 
     template = resources.files("adu").joinpath("templates/map.html").read_text()
-    template = template.replace("Assumes 1-story ADUs.</div>", "Assumes 1-story ADUs. " + SUMMARY_LINK + "</div>")
     data = json.dumps(build_map_collection(df, columns), separators=(",", ":")).replace("</", "<\\/")
     map_path = site / "index.html"
-    map_path.write_text(template.replace("__PARCELS__", data))
+    map_path.write_text(template.replace("__HEADER_LINKS__", SITE_HEADER_LINKS).replace("__PARCELS__", data))
 
     body = markdown.markdown(build_summary(df, load_run_config()), extensions=["tables"])
     summary_path = site / "summary.html"

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bethesda ADU screening: method and limits</title>
+<title>Bethesda ADU screening: methods and data</title>
 <style>
 body { font: 16px/1.6 system-ui, sans-serif; max-width: 860px; margin: 0 auto; padding: 24px 16px; color: #1b1b1b; background: #fff; }
 table { border-collapse: collapse; margin: 12px 0; display: block; overflow-x: auto; }
@@ -44,6 +44,16 @@ ADU size cap.</p>
 <li>Pilot verification against aerial imagery passed at 40/40 on 2026-11-09.</li>
 <li>Not modelled: tree canopy, slope, easements, floodplain or stream buffers, HOA covenants,
   utility capacity, existing or licensed ADUs, attached or interior ADUs, cost.</li>
+</ul>
+<h2>Data sources</h2>
+<ul>
+<li>Parcel boundaries (Montgomery County): <a href="https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/property/MapServer/0">https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/property/MapServer/0</a>, downloaded 2026-11-12</li>
+<li>Zoning (Montgomery County): <a href="https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/zoning/FeatureServer/1">https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/zoning/FeatureServer/1</a>, downloaded 2026-11-12</li>
+<li>Building footprints (Montgomery County): <a href="https://gis.montgomerycountymd.gov/arcgis/rest/services/General/BLDG_PS/MapServer/0">https://gis.montgomerycountymd.gov/arcgis/rest/services/General/BLDG_PS/MapServer/0</a>, downloaded 2026-11-12</li>
+<li>Property records: land use, structure type, living area (Maryland SDAT via MD iMap): <a href="https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0">https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0</a>, downloaded 2026-11-12</li>
+<li>ZIP code areas (US Census TIGERweb, 2020 ZCTAs): <a href="https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1">https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1</a>, downloaded 2026-11-12</li>
+<li>Incorporated towns (US Census TIGERweb): <a href="https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/4">https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/4</a>, downloaded 2026-11-12</li>
+<li>Zoning rules and citations: Montgomery County Zoning Ordinance (Chapter 59) as amended by ZTA 26-06 (Ordinance 20-36, effective 2026-10-05); see <code>config/zones.yaml</code> in the code repository.</li>
 </ul>
 <h2>Counts by status and ZIP (ZCTA)</h2>
 <table>

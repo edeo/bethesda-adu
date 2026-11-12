@@ -146,7 +146,21 @@ def test_public_site_has_no_property_identifiers(interim, tmp_path):
     assert all("address" not in f["properties"] and "sdat_account" not in f["properties"]
                for f in data["features"])
     assert "Main St" not in html and "acct" not in html
-    assert "summary.html" in html
+    assert "summary.html" in html and "github.com/edeo/bethesda-adu" in html
+    assert "__HEADER_LINKS__" not in html and "<header id=\"top\">" in html
     summary = (site / "summary.html").read_text()
     assert SCREENING_CAVEAT in summary
     assert "<table>" in summary
+
+
+def test_local_map_header_links_summary(outputs):
+    html = outputs["adu_map.html"].read_text()
+    assert "<header id=\"top\">" in html
+    assert "href='summary.md'" in html and "__HEADER_LINKS__" not in html
+
+
+def test_summary_lists_data_sources(outputs):
+    text = outputs["summary.md"].read_text()
+    assert "## Data sources" in text
+    assert "Building footprints (Montgomery County)" in text
+    assert "ZTA 26-06" in text
