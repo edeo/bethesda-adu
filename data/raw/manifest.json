@@ -149,5 +149,78 @@
     ],
     "count": 7,
     "downloaded_at": "2026-11-10T02:59:47.275999+00:00"
+  },
+  {
+    "file": "data/raw/full/zcta.geojson",
+    "url": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1",
+    "where": "ZCTA5 IN ('20814', '20816', '20817')",
+    "bbox": null,
+    "count": 3,
+    "downloaded_at": "2026-11-12T15:45:12.844039+00:00"
+  },
+  {
+    "file": "data/raw/full/parcels.geojson",
+    "url": "https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/property/MapServer/0",
+    "where": "1=1",
+    "bbox": [
+      -77.21234100021022,
+      38.934343000278616,
+      -77.07831199959514,
+      39.037911999884535
+    ],
+    "count": 40551,
+    "downloaded_at": "2026-11-12T15:45:47.328733+00:00"
+  },
+  {
+    "file": "data/raw/full/zoning.geojson",
+    "url": "https://gis4.montgomerycountymd.gov/arcgis/rest/services/general/zoning/FeatureServer/1",
+    "where": "1=1",
+    "bbox": [
+      -77.21234100021022,
+      38.934343000278616,
+      -77.07831199959514,
+      39.037911999884535
+    ],
+    "count": 1814,
+    "downloaded_at": "2026-11-12T15:45:49.784298+00:00"
+  },
+  {
+    "file": "data/raw/full/footprints.geojson",
+    "url": "https://gis.montgomerycountymd.gov/arcgis/rest/services/General/BLDG_PS/MapServer/0",
+    "where": "1=1",
+    "bbox": [
+      -77.21234100021022,
+      38.934343000278616,
+      -77.07831199959514,
+      39.037911999884535
+    ],
+    "count": 46826,
+    "downloaded_at": "2026-11-12T15:46:06.500679+00:00"
+  },
+  {
+    "file": "data/raw/full/sdat.geojson",
+    "url": "https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_PropertyData/MapServer/0",
+    "where": "JURSCODE = 'MONT'",
+    "bbox": [
+      -77.21234100021022,
+      38.934343000278616,
+      -77.07831199959514,
+      39.037911999884535
+    ],
+    "count": 57686,
+    "downloaded_at": "2026-11-12T15:46:29.402884+00:00"
+  },
+  {
+    "file": "data/raw/full/places.geojson",
+    "url": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/4",
+    "where": "STATE = '24'",
+    "bbox": [
+      -77.21234100021022,
+      38.934343000278616,
+      -77.07831199959514,
+      39.037911999884535
+    ],
+    "count": 7,
+    "downloaded_at": "2026-11-12T15:46:29.546599+00:00"
   }
 ]
