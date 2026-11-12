@@ -67,6 +67,8 @@ def main(argv: list[str] | None = None) -> None:
     viewer.add_argument("--area", choices=("pilot", "full"), default="pilot")
     pub = sub.add_parser("publish", help="write out/adu_map.html, adu_candidates.csv, summary.md")
     pub.add_argument("--area", choices=("pilot", "full"), default="full")
+    pub.add_argument("--site", action="store_true",
+                     help="write the public website to docs/ (no addresses or account IDs, no CSV)")
     verify = sub.add_parser("verify", help="score a viewer verification export")
     verify.add_argument("csv_path", type=Path)
     args = parser.parse_args(argv)
@@ -80,9 +82,9 @@ def main(argv: list[str] | None = None) -> None:
         print("serve with: python -m http.server 8000")
         print("then open:  http://localhost:8000/viewer/")
     elif args.command == "publish":
-        from adu.publish import publish
+        from adu.publish import publish, publish_site
 
-        for path in publish(args.area):
+        for path in (publish_site(args.area) if args.site else publish(args.area)):
             print(f"wrote {path} ({path.stat().st_size / 1e6:.1f} MB)")
     elif args.command == "verify":
         from adu.verify import score_verification

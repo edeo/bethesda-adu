@@ -147,7 +147,7 @@ def _round(coords):
     return [_round(c) for c in coords]
 
 
-def build_map_collection(df: gpd.GeoDataFrame) -> dict:
+def build_map_collection(df: gpd.GeoDataFrame, columns: list[str] = POPUP_COLUMNS) -> dict:
     g = df.copy()
     g["geometry"] = g.geometry.simplify(SIMPLIFY_FT, preserve_topology=True)
     g = g.to_crs(4326)
@@ -157,7 +157,7 @@ def build_map_collection(df: gpd.GeoDataFrame) -> dict:
         if geom is None or geom.is_empty:
             continue
         props = {}
-        for col in POPUP_COLUMNS:
+        for col in columns:
             v = _clean(rec.get(col))
             if v is not None and v != "":
                 props[col] = v
@@ -183,3 +183,49 @@ def publish(area: str, interim_dir: Path | None = None, out_dir: Path | None = N
     map_path = out / "adu_map.html"
     map_path.write_text(template.replace("__PARCELS__", data))
     return [map_path, csv_path, summary_path]
+
+
+# Fields that identify a specific property; left out of the public website.
+PRIVATE_COLUMNS = ("address", "sdat_account")
+SITE_DIR = Path("docs")
+SUMMARY_LINK = "<a href='summary.html'>Method and limits</a>"
+
+SUMMARY_PAGE = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bethesda ADU screening: method and limits</title>
+<style>
+body {{ font: 16px/1.6 system-ui, sans-serif; max-width: 860px; margin: 0 auto; padding: 24px 16px; color: #1b1b1b; background: #fff; }}
+table {{ border-collapse: collapse; margin: 12px 0; display: block; overflow-x: auto; }}
+th, td {{ border: 1px solid #ccc; padding: 4px 8px; text-align: right; }}
+th:first-child, td:first-child {{ text-align: left; }}
+a {{ color: #0b5cad; }}
+</style></head><body>
+<p><a href="index.html">&larr; Back to the map</a></p>
+{body}
+</body></html>
+"""
+
+
+def publish_site(area: str = "full", interim_dir: Path | None = None, site_dir: Path | None = None) -> list[Path]:
+    """Public website: map without property identifiers, plus the summary as HTML. No CSV."""
+    import markdown
+
+    site = Path(site_dir) if site_dir else SITE_DIR
+    site.mkdir(parents=True, exist_ok=True)
+    df = _load(area, interim_dir)
+    columns = [c for c in POPUP_COLUMNS if c not in PRIVATE_COLUMNS]
+
+    template = resources.files("adu").joinpath("templates/map.html").read_text()
+    template = template.replace("Assumes 1-story ADUs.</div>", "Assumes 1-story ADUs. " + SUMMARY_LINK + "</div>")
+    data = json.dumps(build_map_collection(df, columns), separators=(",", ":")).replace("</", "<\\/")
+    map_path = site / "index.html"
+    map_path.write_text(template.replace("__PARCELS__", data))
+
+    body = markdown.markdown(build_summary(df, load_run_config()), extensions=["tables"])
+    summary_path = site / "summary.html"
+    summary_path.write_text(SUMMARY_PAGE.format(body=body))
+
+    nojekyll = site / ".nojekyll"
+    nojekyll.write_text("")
+    return [map_path, summary_path, nojekyll]

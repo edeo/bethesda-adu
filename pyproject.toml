@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "geopandas>=1.2.0",
+    "markdown>=3.11.3",
     "numpy>=2.4.6",
     "pyarrow>=26.0.1",
     "pyproj>=3.7.2",

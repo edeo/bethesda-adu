@@ -131,3 +131,22 @@ def test_flagged_town_wording():
     text = build_summary(_summary_df(["fits"]), {"zctas": ["20814"]})
     assert "flagged_town: 2 lots (in an incorporated town (town rules may apply); 1 fit geometrically)" in text
     assert "would fit" not in text
+
+
+def test_public_site_has_no_property_identifiers(interim, tmp_path):
+    from adu.publish import publish_site
+
+    site = tmp_path / "site"
+    paths = publish_site("full", interim_dir=interim, site_dir=site)
+    assert {p.name for p in paths} == {"index.html", "summary.html", ".nojekyll"}
+    assert not list(site.glob("*.csv"))
+    html = (site / "index.html").read_text()
+    data = json.loads(html.split("const PARCELS = ", 1)[1].split(";\n", 1)[0])
+    assert data["features"], "map data not found"
+    assert all("address" not in f["properties"] and "sdat_account" not in f["properties"]
+               for f in data["features"])
+    assert "Main St" not in html and "acct" not in html
+    assert "summary.html" in html
+    summary = (site / "summary.html").read_text()
+    assert SCREENING_CAVEAT in summary
+    assert "<table>" in summary
