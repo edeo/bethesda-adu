@@ -148,3 +148,13 @@ def test_neighbors_file_holds_unclipped_parcels(raw, tmp_path, run_cfg):
     assert nb.set_index("parcel_id").loc["3", "is_row"] == True  # noqa: E712
     assert nb.geometry.is_valid.all()
     assert set(nb.geom_type) <= {"Polygon", "MultiPolygon"}
+
+
+def test_not_built_yet_footprints_dropped(raw, tmp_path, run_cfg):
+    basic(raw)
+    raw.footprint(rect(30, 5, 40, 30), status="NOT BUILT YET")
+    raw.footprint(rect(5, 5, 20, 10))
+    _, fps = run(raw, tmp_path, run_cfg)
+    assert len(fps) == 1
+    assert fps.iloc[0]["fp_area_sqft"] == pytest.approx(200, abs=1)
+    assert bool(fps.iloc[0]["is_principal"])

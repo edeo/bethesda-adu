@@ -1,8 +1,8 @@
 {
   "fits|none": 71,
   "ineligible|no_house_footprint": 3,
-  "ineligible|not_sfd": 242,
-  "ineligible|zone_ineligible": 23,
+  "ineligible|not_sfd": 240,
+  "ineligible|zone_ineligible": 25,
   "no_fit|coverage_exhausted": 1,
   "no_fit|no_pocket": 20,
   "no_fit|pocket_too_small": 65,

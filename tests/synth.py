@@ -30,8 +30,8 @@ class RawBuilder:
     def zone(self, geom, code):
         self.zoning.append({self.s["zoning"]["fields"]["zone"]: code, "geometry": geom})
 
-    def footprint(self, geom):
-        self.footprints.append({"geometry": geom})
+    def footprint(self, geom, status=""):
+        self.footprints.append({self.s["footprints"]["fields"]["status"]: status, "geometry": geom})
 
     def sdat_row(self, acctid, living=1500.0, land_use="R", structure="C101", address="1 TEST ST"):
         f = self.s["sdat"]["fields"]
@@ -49,7 +49,7 @@ class RawBuilder:
         f = self.s
         dump(self.parcels, "parcels", [f["parcels"]["fields"][k] for k in ("parcel_id", "sdat_account", "sdat_district")])
         dump(self.zoning, "zoning", [f["zoning"]["fields"]["zone"]])
-        dump(self.footprints, "footprints", [])
+        dump(self.footprints, "footprints", [f["footprints"]["fields"]["status"]])
         sd = gpd.GeoDataFrame(self.sdat, geometry=[rect(0, 0, 1, 1).centroid] * len(self.sdat), crs=CRS)
         sd.to_crs("EPSG:4326").to_file(self.dir / "sdat.geojson", driver="GeoJSON")
         dump([{f["zcta"]["fields"]["zcta"]: "20816", "geometry": g} for g in self.zcta], "zcta", [f["zcta"]["fields"]["zcta"]])

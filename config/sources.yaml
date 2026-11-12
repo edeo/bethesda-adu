@@ -46,6 +46,9 @@ footprints:
     building_class: BLDG_CLASS   # P = largest bldg at an address, S = smaller separate bldg, Q = connected/unit
     account: BLDG_PROP_TAX_ID
     edit_date: BLDG_DATE
+    status: STATUS
+  # Footprints with these STATUS values are planned, not built, and are dropped in prepare.
+  exclude_status: ["NOT BUILT YET"]
   join_key: null
   max_record_count: 2000
   notes: "County building footprints (public-safety/addressing layer). In the pilot bbox 432 of 588 footprints carry BLDG_DATE 2003; small sheds are mostly absent (22 footprints < 200 sf). Rebuilt houses may be stale - check in pilot verification."

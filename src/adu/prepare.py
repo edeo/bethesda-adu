@@ -82,7 +82,14 @@ def prepare(raw_dir: Path, out_dir: Path, area: str, sources: dict | None = None
 
     raw_parcels = _read(raw_dir, "parcels", [pf["parcel_id"], pf["sdat_account"], pf["sdat_district"]])
     zoning = _read(raw_dir, "zoning", [zf["zone"]])
-    footprints = _read(raw_dir, "footprints", [])
+    ff = sources["footprints"]
+    status_col = ff.get("fields", {}).get("status")
+    footprints = _read(raw_dir, "footprints", [status_col] if status_col else [])
+    excluded = ff.get("exclude_status") or []
+    if status_col and excluded:
+        # Planned buildings ("NOT BUILT YET") are not on the ground yet.
+        status = footprints[status_col].astype("string").str.strip()
+        footprints = footprints[~status.isin(excluded).fillna(False)].reset_index(drop=True)
     sdat = _read(raw_dir, "sdat", list(sf.values()))
     zcta = _read(raw_dir, "zcta", [sources["zcta"]["fields"]["zcta"]])
     places = _read(raw_dir, "places", [sources["places"]["fields"]["name"]])
