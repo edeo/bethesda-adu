@@ -19,6 +19,15 @@
   .note { font-size: 11px; color: #555; margin-top: 6px; }
   table.pop td { padding: 1px 6px 1px 0; vertical-align: top; }
   table.pop td:first-child { color: #666; white-space: nowrap; }
+  .panel .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .panel .head h1 { margin: 0; }
+  #toggle { font: inherit; font-size: 12px; padding: 2px 8px; border: 1px solid #999; border-radius: 4px;
+            background: #fff; cursor: pointer; }
+  .panel.collapsed .body { display: none; }
+  .panel .body { margin-top: 6px; }
+  @media (max-width: 600px) {
+    .panel { width: calc(100vw - 64px); max-height: 70vh; overflow-y: auto; padding: 8px 10px; }
+  }
 </style>
 </head>
 <body>
@@ -46,7 +55,7 @@ const PARCELS = __PARCELS__;
     {maxZoom: 19, attribution: "&copy; OpenStreetMap"});
   var imap = L.tileLayer("https://mdimap.maryland.gov/arcgis/rest/services/Imagery/MD_AerialImagery/MapServer/tile/{z}/{y}/{x}",
     {maxZoom: 19, attribution: "MD iMap"});
-  var map = L.map("map", {preferCanvas: true, layers: [esri]}).setView([38.985, -77.10], 13);
+  var map = L.map("map", {preferCanvas: true, zoomSnap: 0.25, layers: [esri]}).setView([38.985, -77.10], 13);
   L.control.layers({"Esri World Imagery": esri, "OpenStreetMap": osm, "MD iMap (misaligned)": imap}).addTo(map);
 
   function uniq(key) {
@@ -108,13 +117,15 @@ const PARCELS = __PARCELS__;
     var d = L.DomUtil.create("div", "panel");
     var opts = function (a) { return "<option value=''>All</option>" + a.map(function (x) {
       return "<option>" + esc(x) + "</option>"; }).join(""); };
-    d.innerHTML = "<h1>Detached ADU screening</h1>" +
-      "<div id='legend'></div>" +
+    if (window.innerWidth <= 600) { d.className += " collapsed"; }
+    d.innerHTML = "<div class='head'><h1>Detached ADU screening</h1>" +
+      "<button id='toggle' type='button' aria-expanded='true'>Hide</button></div>" +
+      "<div class='body'><div id='legend'></div>" +
       "<label>ZIP<select id='f-zcta'>" + opts(uniq("zcta")) + "</select></label>" +
       "<label>Zone<select id='f-zone'>" + opts(uniq("zone")) + "</select></label>" +
       "<label>Minimum ADU size: <span id='f-min-v'>any</span><input id='f-min' type='range' min='0' max='" +
       maxAdu + "' step='50' value='0'></label>" +
-      "<div class='note'>Screening estimate, not a permitting determination. Assumes 1-story ADUs.</div>";
+      "<div class='note'>Screening estimate, not a permitting determination. Assumes 1-story ADUs.</div></div>";
     L.DomEvent.disableClickPropagation(d);
     L.DomEvent.disableScrollPropagation(d);
     return d;
@@ -135,9 +146,19 @@ const PARCELS = __PARCELS__;
     document.getElementById("f-min-v").textContent = state.min ? state.min + " sq ft" : "any";
   });
   document.getElementById("f-min").addEventListener("change", rebuild);
+  var panelEl = document.querySelector(".panel"), toggle = document.getElementById("toggle");
+  function syncToggle() {
+    var open = !panelEl.classList.contains("collapsed");
+    toggle.textContent = open ? "Hide" : "Legend & filters";
+    toggle.setAttribute("aria-expanded", String(open));
+  }
+  toggle.addEventListener("click", function () { panelEl.classList.toggle("collapsed"); syncToggle(); });
+  syncToggle();
 
   rebuild();
-  try { map.fitBounds(layer.getBounds()); } catch (e) {}
+  // Open on the study area, leaving room on the right for the panel when it is expanded.
+  var right = panelEl.classList.contains("collapsed") ? 10 : panelEl.offsetWidth + 20;
+  try { map.fitBounds(layer.getBounds(), {paddingTopLeft: [10, 10], paddingBottomRight: [right, 10]}); } catch (e) {}
 })();
 </script>
 </body>
